@@ -1,0 +1,20 @@
+{
+  "server": {
+    "host": "localhost",
+    "port": 8080,
+    "keep_alive": true,
+    "timeout": 5000,
+    "max_threads": 200,
+    "max_connections": 1000,
+    "static_resource_dir": "static/",
+    "cache_dir": "cache/",
+    "log_dir": "log/",
+    "default_page": "index.html",
+    "default_encoding": "UTF-8",
+    "default_content_type": "text/html"
+  },
+
+  "client": {
+
+  }
+}
