@@ -67,7 +67,7 @@ public class Searcher {
 
                 return internalPath;
             } else {
-                Log.debug("Searcher", "Internal resource not found: " + relativePath);
+                return null;
             }
         } catch (Exception e) {
             Log.error("Searcher", "Failed to get internal path: " + relativePath, e);

@@ -115,7 +115,7 @@ public class Config {
         PORT = serverConfig.optInt("port", 8080);
         KEEP_ALIVE = serverConfig.optBoolean("keep_alive", true);
         TIMEOUT = serverConfig.optInt("timeout", 5000);
-        THREAD_POOL = serverConfig.optBoolean("thread_pool", true);
+        THREAD_POOL = serverConfig.optBoolean("thread_pool", false);
         int cores = Runtime.getRuntime().availableProcessors();
         int maxThreads = serverConfig.optInt("max_threads", 4);
         if(maxThreads <= 0) maxThreads = 4;

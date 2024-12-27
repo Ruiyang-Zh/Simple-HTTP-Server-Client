@@ -21,7 +21,6 @@ public class HttpServer {
     private final String HOST;
     private final int PORT;
     private final ExecutorService threadPool;
-
     private Selector selector;
     private ServerSocketChannel serverChannel;
     private boolean running = true;
@@ -93,6 +92,7 @@ public class HttpServer {
             running = false;
             if (selector != null) selector.close();
             if (serverChannel != null) serverChannel.close();
+            if (threadPool != null) threadPool.shutdown();
             Log.info("Server", "Server stopped");
         } catch (IOException e) {
             Log.error("Server", "Error stopping server", e);
@@ -120,22 +120,25 @@ public class HttpServer {
     private void read(SelectionKey key) {
         SocketChannel client = (SocketChannel) key.channel();
         ByteBuffer buffer = ByteBuffer.allocate(Config.BUFFER_SIZE);
+        StringBuilder requestBuilder = new StringBuilder();
 
         try {
-            int bytesRead = client.read(buffer);
+            int bytesRead;
+            while ((bytesRead = client.read(buffer)) > 0) {
+                buffer.flip();
+                byte[] data = new byte[buffer.remaining()];
+                buffer.get(data);
+                requestBuilder.append(new String(data, Config.DEFAULT_ENCODING));
+                buffer.clear();
+            }
+
             if (bytesRead == -1) {
                 client.close();
                 Log.info("Server", "Connection closed by client");
                 return;
             }
 
-            if(bytesRead == 0) {
-                Log.info("Server", "No data received");
-                return;
-            }
-
-            buffer.flip();
-            String requestData = new String(buffer.array(), 0, buffer.limit());
+            String requestData = requestBuilder.toString();
             Log.debug("Server", "Request received: \n" + requestData);
 
             if(threadPool != null) {
@@ -152,13 +155,6 @@ public class HttpServer {
                 Log.error("Server", "Failed to close client connection", ex);
             }
         }
-    }
-
-    private void processRequest (SelectionKey key, String requestData) {
-            HttpRequest request = new HttpRequest(requestData);
-            HttpResponse response = ServerHandler.handle(request);
-            key.attach(response);
-            key.interestOps(SelectionKey.OP_WRITE);
     }
 
     /**
@@ -192,6 +188,14 @@ public class HttpServer {
             }
         }
     }
+
+    private void processRequest (SelectionKey key, String requestData) {
+        HttpRequest request = new HttpRequest(requestData);
+        HttpResponse response = ServerHandler.handle(request);
+        key.attach(response);
+        key.interestOps(SelectionKey.OP_WRITE);
+    }
+
 
     public static void main(String[] args) {
         HttpServer server = new HttpServer();
