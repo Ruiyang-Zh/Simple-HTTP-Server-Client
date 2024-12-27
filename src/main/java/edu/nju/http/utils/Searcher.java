@@ -1,7 +1,5 @@
 package edu.nju.http.utils;
 
-import edu.nju.http.server.Config;
-
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;

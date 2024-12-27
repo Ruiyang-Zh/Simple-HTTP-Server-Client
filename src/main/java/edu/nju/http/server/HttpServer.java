@@ -11,14 +11,34 @@ import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
- * HttpServer - 基于 NIO 的 HTTP 服务器主类
+ * HttpServer
  */
 public class HttpServer {
+    private final String HOST;
+    private final int PORT;
+    private final ExecutorService threadPool;
+
     private Selector selector;
     private ServerSocketChannel serverChannel;
     private boolean running = true;
+
+    public HttpServer() {
+        this(Config.HOST, Config.PORT);
+    }
+
+    public HttpServer(String host, int port) {
+        if(Config.THREAD_POOL) {
+            threadPool = Executors.newFixedThreadPool(Config.MAX_THREADS);
+        } else {
+            threadPool = null;
+        }
+        this.HOST = host;
+        this.PORT = port;
+    }
 
     /**
      * 启动 HTTP 服务器
@@ -28,14 +48,14 @@ public class HttpServer {
             // 初始化 Selector 和 ServerSocketChannel
             selector = Selector.open();
             serverChannel = ServerSocketChannel.open();
-            serverChannel.bind(new InetSocketAddress(Config.HOST, Config.PORT));
+            serverChannel.bind(new InetSocketAddress(HOST, PORT));
             serverChannel.configureBlocking(false);
             serverChannel.register(selector, SelectionKey.OP_ACCEPT);
 
-            Log.info("Server", "Server started on " + Config.HOST + ":" + Config.PORT);
+            Log.info("Server", "Server started on " + HOST + ":" + PORT);
 
             while (running) {
-                selector.select();
+                selector.select(Config.TIMEOUT);
 
                 Set<SelectionKey> selectedKeys = selector.selectedKeys();
                 Iterator<SelectionKey> iterator = selectedKeys.iterator();
@@ -44,12 +64,17 @@ public class HttpServer {
                     SelectionKey key = iterator.next();
                     iterator.remove();
 
-                    if (key.isAcceptable()) {
-                        accept(key);
-                    } else if (key.isReadable()) {
-                        read(key);
-                    } else if (key.isWritable()) {
-                        write(key);
+                    try {
+                        if (key.isAcceptable()) {
+                            accept(key);
+                        } else if (key.isReadable()) {
+                            read(key);
+                        } else if (key.isWritable()) {
+                            write(key);
+                        }
+                    } catch (Exception e) {
+                        Log.error("Server", "Error handling key: " + key, e);
+                        key.cancel();
                     }
                 }
             }
@@ -94,7 +119,7 @@ public class HttpServer {
      */
     private void read(SelectionKey key) {
         SocketChannel client = (SocketChannel) key.channel();
-        ByteBuffer buffer = ByteBuffer.allocate(2048);
+        ByteBuffer buffer = ByteBuffer.allocate(Config.BUFFER_SIZE);
 
         try {
             int bytesRead = client.read(buffer);
@@ -104,23 +129,36 @@ public class HttpServer {
                 return;
             }
 
+            if(bytesRead == 0) {
+                Log.info("Server", "No data received");
+                return;
+            }
+
             buffer.flip();
             String requestData = new String(buffer.array(), 0, buffer.limit());
             Log.debug("Server", "Request received: \n" + requestData);
 
-            HttpRequest request = new HttpRequest(requestData);
-            HttpResponse response = ServerHandler.handle(request);
-
-            key.attach(response);
-            key.interestOps(SelectionKey.OP_WRITE);
+            if(threadPool != null) {
+                threadPool.execute(() -> processRequest(key, requestData));
+            } else {
+                processRequest(key, requestData);
+            }
         } catch (IOException e) {
             Log.error("Server", "Error reading request", e);
             try {
                 client.close();
+                Log.info("Server", "Connection closed by server");
             } catch (IOException ex) {
                 Log.error("Server", "Failed to close client connection", ex);
             }
         }
+    }
+
+    private void processRequest (SelectionKey key, String requestData) {
+            HttpRequest request = new HttpRequest(requestData);
+            HttpResponse response = ServerHandler.handle(request);
+            key.attach(response);
+            key.interestOps(SelectionKey.OP_WRITE);
     }
 
     /**
@@ -138,6 +176,7 @@ public class HttpServer {
 
             if (!Config.KEEP_ALIVE || !"keep-alive".equalsIgnoreCase(response.getHeaderVal(Header.Connection))) {
                 client.close();
+                Log.info("Server", "Connection closed by server");
             } else {
                 key.interestOps(SelectionKey.OP_READ);
             }
@@ -147,6 +186,7 @@ public class HttpServer {
             Log.error("Server", "Error sending response", e);
             try {
                 client.close();
+                Log.info("Server", "Connection closed by server");
             } catch (IOException ex) {
                 Log.error("Server", "Failed to close client connection", ex);
             }
@@ -155,6 +195,7 @@ public class HttpServer {
 
     public static void main(String[] args) {
         HttpServer server = new HttpServer();
+        Log.init(Config.LOG_LEVEL);
         server.start();
     }
 }

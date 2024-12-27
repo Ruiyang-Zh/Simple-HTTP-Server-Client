@@ -1,5 +1,6 @@
 package edu.nju.http.server;
 
+import edu.nju.http.message.constant.Status;
 import edu.nju.http.utils.Log;
 import edu.nju.http.utils.Searcher;
 
@@ -28,8 +29,12 @@ public class Config {
     public static final int PORT;
     public static final boolean KEEP_ALIVE;
     public static final int TIMEOUT;
+    public static final boolean THREAD_POOL;
     public static final int MAX_THREADS;
     public static final int MAX_CONNECTIONS;
+
+    // ================== 读写配置 ==================
+    public static final int BUFFER_SIZE;
 
     // ================== 缓存配置 ==================
     public static final boolean ENABLE_CACHE;
@@ -46,6 +51,16 @@ public class Config {
     public static final String DATA_DIR;
 
     // ================== 重定向规则 ==================
+    public static class RedirectRule {
+        public final String target;
+        public final int statusCode;
+
+        public RedirectRule(String target, int statusCode) {
+            this.target = target;
+            this.statusCode = statusCode;
+        }
+    }
+
     public static final Map<String, RedirectRule> REDIRECT_RULES = new HashMap<>();
 
     // ================== 日志级别 ==================
@@ -53,7 +68,6 @@ public class Config {
 
     // ================== 配置文件路径 ==================
     private static final String CONFIG_FILE = "config/config.json";
-    private static final String REDIRECT_CONFIG_FILE = "config/redirect.json";
 
     static {
         JSONObject configJson = null;
@@ -87,7 +101,7 @@ public class Config {
 
         JSONObject serverConfig = null;
         if(configJson == null){
-            Log.warn("Config", "Configuration file not found. Using default settings.");
+            Log.debug("Config", "Configuration file not found. Using default settings.");
             serverConfig = new JSONObject();
         } else {
             serverConfig = isExternal ? configJson : configJson.optJSONObject("server");
@@ -101,8 +115,14 @@ public class Config {
         PORT = serverConfig.optInt("port", 8080);
         KEEP_ALIVE = serverConfig.optBoolean("keep_alive", true);
         TIMEOUT = serverConfig.optInt("timeout", 5000);
-        MAX_THREADS = serverConfig.optInt("max_threads", 200);
+        THREAD_POOL = serverConfig.optBoolean("thread_pool", true);
+        int cores = Runtime.getRuntime().availableProcessors();
+        int maxThreads = serverConfig.optInt("max_threads", 4);
+        if(maxThreads <= 0) maxThreads = 4;
+        MAX_THREADS = Math.min(maxThreads, cores * 2);
         MAX_CONNECTIONS = serverConfig.optInt("max_connections", 1000);
+
+        BUFFER_SIZE = serverConfig.optInt("buffer_size", 2048);
 
         ENABLE_CACHE = serverConfig.optBoolean("enable_cache", false);
         CACHE_CONTROL = serverConfig.optString("cache_control", "public,max-age=3600");
@@ -115,48 +135,19 @@ public class Config {
         LOG_DIR = serverConfig.optString("log_dir", "log");
         DATA_DIR = serverConfig.optString("data_dir", "data");
 
-        loadRedirectRules();
+        JSONArray redirects = serverConfig.optJSONArray("redirects");
+        if (redirects != null) {
+            for (int i = 0; i < redirects.length(); i++) {
+                JSONObject rule = redirects.getJSONObject(i);
+                String path = rule.optString("path");
+                String target = rule.optString("target");
+                int status = rule.optInt("status", Status.FOUND);
 
-    }
-
-    private static void loadRedirectRules() {
-        try {
-            Path redirectConfigPath = Searcher.pathOf(REDIRECT_CONFIG_FILE);
-            if (redirectConfigPath != null && redirectConfigPath.toFile().exists()) {
-                Log.debug("Config", "Loading redirect rules from: " + REDIRECT_CONFIG_FILE);
-                FileInputStream fis = new FileInputStream(redirectConfigPath.toFile());
-                JSONObject configJson = new JSONObject(new JSONTokener(fis));
-                fis.close();
-
-                JSONArray redirects = configJson.optJSONArray("redirects");
-                if (redirects != null) {
-                    for (int i = 0; i < redirects.length(); i++) {
-                        JSONObject rule = redirects.getJSONObject(i);
-                        String path = rule.optString("path");
-                        String target = rule.optString("target");
-                        int status = rule.optInt("status", 302);
-
-                        if (!path.isEmpty() && !target.isEmpty()) {
-                            REDIRECT_RULES.put(path, new RedirectRule(target, status));
-                            Log.debug("Config","Loaded redirect rule: " + path + " -> " + target + " (" + status + ")");
-                        }
-                    }
+                if (!path.isEmpty() && !target.isEmpty()) {
+                    REDIRECT_RULES.put(path, new RedirectRule(target, status));
+                    Log.debug("Config","Loaded redirect rule: " + path + " -> " + target + " (" + status + ")");
                 }
-            } else {
-                Log.debug("Config","Redirect configuration file not found.");
             }
-        } catch (IOException e) {
-            Log.error("Config","Failed to load redirect.json.");
-        }
-    }
-
-    public static class RedirectRule {
-        public final String target;
-        public final int statusCode;
-
-        public RedirectRule(String target, int statusCode) {
-            this.target = target;
-            this.statusCode = statusCode;
         }
     }
 

@@ -54,7 +54,7 @@ public class ServerHandler {
      * 处理 GET 请求
      */
     private static HttpResponse handleGet(HttpRequest request) {
-        String path = request.getPath().equals("/") ? "index.html" : request.getPath();
+        String path = request.getPath();
         Log.debug("ServerHandler", "Handling GET request for path: " + path);
 
         // 检查重定向规则
@@ -63,6 +63,8 @@ public class ServerHandler {
             Log.info("Server", "Redirecting to: " + rule.target + " with status: " + rule.statusCode);
             return createRedirectResponse(request.getVersion(), rule.statusCode, rule.target);
         }
+
+        path = path.equals("/") ? Config.DEFAULT_PAGE : path;
 
         // 查找资源路径
         Path filePath = Searcher.pathOf(Config.STATIC_RESOURCE_DIR + path);
