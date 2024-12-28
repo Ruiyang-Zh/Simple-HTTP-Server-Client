@@ -30,11 +30,11 @@ public class Status {
         STATUS_PHRASES.put(Status.METHOD_NOT_ALLOWED, "Method Not Allowed");
         STATUS_PHRASES.put(Status.INTERNAL_SERVER_ERROR, "Internal Server Error");
 
-        DEFAULT_ERROR_PAGES.put(Status.BAD_REQUEST, Config.STATIC_RESOURCE_DIR + "400.html");
-        DEFAULT_ERROR_PAGES.put(Status.UNAUTHORIZED, Config.STATIC_RESOURCE_DIR + "401.html");
-        DEFAULT_ERROR_PAGES.put(Status.NOT_FOUND, Config.STATIC_RESOURCE_DIR + "404.html");
-        DEFAULT_ERROR_PAGES.put(Status.METHOD_NOT_ALLOWED, Config.STATIC_RESOURCE_DIR + "405.html");
-        DEFAULT_ERROR_PAGES.put(Status.INTERNAL_SERVER_ERROR, Config.STATIC_RESOURCE_DIR + "500.html");
+        DEFAULT_ERROR_PAGES.put(Status.BAD_REQUEST, Config.STATIC_RESOURCE_DIR + "/400.html");
+        DEFAULT_ERROR_PAGES.put(Status.UNAUTHORIZED, Config.STATIC_RESOURCE_DIR + "/401.html");
+        DEFAULT_ERROR_PAGES.put(Status.NOT_FOUND, Config.STATIC_RESOURCE_DIR + "/404.html");
+        DEFAULT_ERROR_PAGES.put(Status.METHOD_NOT_ALLOWED, Config.STATIC_RESOURCE_DIR + "/405.html");
+        DEFAULT_ERROR_PAGES.put(Status.INTERNAL_SERVER_ERROR, Config.STATIC_RESOURCE_DIR + "/500.html");
 
     }
 

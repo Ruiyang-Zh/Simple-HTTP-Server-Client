@@ -15,7 +15,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
- * ServerHandler - 处理 HTTP 请求，包括缓存支持
+ * ServerHandler - 处理 HTTP 请求
  */
 public class ServerHandler {
 
@@ -25,14 +25,17 @@ public class ServerHandler {
 
         try {
             Version.validateVersion(request.getVersion());
-            response = switch (request.getMethod()) {
-                case Method.GET -> handleGet(request);
-                case Method.POST -> handlePost(request);
-                default -> {
+            switch (request.getMethod()) {
+                case Method.GET:
+                    response = handleGet(request);
+                    break;
+                case Method.POST:
+                    response = handlePost(request);
+                    break;
+                default:
                     Log.warn("Server", "Unsupported method: " + request.getMethod());
-                    yield createErrorResponse(request.getVersion(), Status.METHOD_NOT_ALLOWED);
-                }
-            };
+                    response = createErrorResponse(request.getVersion(), Status.METHOD_NOT_ALLOWED);
+            }
         } catch (IllegalArgumentException e) {
             Log.warn("Server", "Bad request: " + e.getMessage());
             response = createErrorResponse(request.getVersion(), Status.BAD_REQUEST);
@@ -80,14 +83,9 @@ public class ServerHandler {
                 return createNotModifiedResponse(request.getVersion());
             }
 
-            // 读取文件内容
-            byte[] fileContent = Files.readAllBytes(filePath);
-            String mimeType = MIME.getMimeType(MIME.getFileExtension(filePath.toString()));
-            Log.info("ServerHandler", "Serving file: " + filePath + " with type: " + mimeType);
+            HttpResponse response = createSuccessResponse(request.getVersion(), filePath);
 
-            HttpResponse response = createSuccessResponse(request.getVersion(), fileContent, mimeType);
-            response.setHeader(Header.Cache_Control, Config.CACHE_CONTROL);
-            setResourceHeaders(response, filePath);
+            Log.info("ServerHandler", "Serving file: " + filePath + " with type: " + response.getHeaderVal(Header.Content_Type));
 
             return response;
         } catch (IOException e) {
@@ -103,15 +101,26 @@ public class ServerHandler {
     private static HttpResponse handlePost(HttpRequest request) {
         String body = new String(request.getBody());
         System.out.println("Received POST Data: " + body);
-        return createSuccessResponse(request.getVersion(), ("Received: " + body).getBytes(), MIME.TEXT_PLAIN);
+        return createSuccessResponse(request.getVersion(), "Received: " + body);
     }
 
     /**
-     * 创建 200 OK 成功响应
+     * 创建 200 OK 成功响应: 文本内容
      */
-    private static HttpResponse createSuccessResponse(String version, byte[] body, String mimeType) {
+    private static HttpResponse createSuccessResponse(String version, String body) {
         HttpResponse response = new HttpResponse(version, Status.OK);
-        response.setBody(body, mimeType);
+        response.setBody(body.getBytes(), MIME.TEXT_PLAIN);
+        setCommonHeaders(response);
+        return response;
+    }
+
+    /**
+     * 创建 200 OK 成功响应: 文件内容
+     */
+    private static HttpResponse createSuccessResponse (String version, Path filePath) throws IOException {
+        HttpResponse response = new HttpResponse(version, Status.OK);
+        response.setBody(filePath);
+        setResourceHeaders(response, filePath);
         setCommonHeaders(response);
         return response;
     }
@@ -121,7 +130,6 @@ public class ServerHandler {
      */
     private static HttpResponse createNotModifiedResponse(String version) {
         HttpResponse response = new HttpResponse(version, Status.NOT_MODIFIED);
-        response.setHeader(Header.Cache_Control, Config.CACHE_CONTROL);
         setCommonHeaders(response);
         return response;
     }
@@ -142,7 +150,12 @@ public class ServerHandler {
      */
     private static HttpResponse createErrorResponse(String version, int statusCode) {
         HttpResponse response = new HttpResponse(version, statusCode);
-        response.setBody(Status.getDefaultErrorPage(statusCode));
+        try {
+            response.setBody(Status.getDefaultErrorPage(statusCode));
+        } catch (IOException e) {
+            Log.error("ServerHandler", "Failed to return error response", e);
+            throw new RuntimeException(e);
+        }
         setCommonHeaders(response);
         return response;
     }
@@ -154,6 +167,22 @@ public class ServerHandler {
         response.setHeader(Header.Date, date);
         if (response.getHeaderVal(Header.Cache_Control) == null) {
             response.setHeader(Header.Cache_Control, Config.CACHE_CONTROL);
+        }
+    }
+
+    /**
+     * 设置资源相关头部信息
+     */
+    private static void setResourceHeaders(HttpResponse response, Path filePath) {
+        try {
+            FileTime lastModifiedTime = Files.getLastModifiedTime(filePath);
+            String eTag = String.valueOf(lastModifiedTime.toMillis());
+
+            response.setHeader(Header.ETag, eTag);
+            response.setHeader(Header.Last_Modified, ZonedDateTime.now().format(DateTimeFormatter.RFC_1123_DATE_TIME));
+            Log.debug("ServerHandler", "Set resource headers: ETag=" + eTag);
+        } catch (IOException e) {
+            Log.error("ServerHandler", "Failed to set resource headers", e);
         }
     }
 
@@ -184,22 +213,6 @@ public class ServerHandler {
         }
 
         return false;
-    }
-
-    /**
-     * 设置资源相关头部信息
-     */
-    private static void setResourceHeaders(HttpResponse response, Path filePath) {
-        try {
-            FileTime lastModifiedTime = Files.getLastModifiedTime(filePath);
-            String eTag = String.valueOf(lastModifiedTime.toMillis());
-
-            response.setHeader(Header.ETag, eTag);
-            response.setHeader(Header.Last_Modified, ZonedDateTime.now().format(DateTimeFormatter.RFC_1123_DATE_TIME));
-            Log.debug("ServerHandler", "Set resource headers: ETag=" + eTag);
-        } catch (IOException e) {
-            Log.error("ServerHandler", "Failed to set resource headers", e);
-        }
     }
 
 }

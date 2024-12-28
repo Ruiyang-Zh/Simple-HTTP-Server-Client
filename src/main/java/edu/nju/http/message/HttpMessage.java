@@ -1,12 +1,18 @@
 package edu.nju.http.message;
 
 import edu.nju.http.message.constant.*;
+import edu.nju.http.server.Config;
 import edu.nju.http.utils.Searcher;
 import lombok.Getter;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -17,6 +23,15 @@ public abstract class HttpMessage {
     protected Map<String, String> headers; // HTTP 头部字段
     @Getter
     protected byte[] body; // HTTP 消息体
+
+    /**
+     * 构造初始 HTTP 消息，需进一步进行自定义设置
+     */
+    public HttpMessage() {
+        this.version = Version.HTTP_1_1;
+        this.headers = new HashMap<>();
+        this.body = null;
+    }
 
     /**
      *使用成员参数构造 HTTP 消息
@@ -30,12 +45,11 @@ public abstract class HttpMessage {
         setBody(body);
     }
 
-
     /**
      *使用原始消息构造 HTTP 消息
      * @param rawMessage 原始消息
      */
-    public HttpMessage(String rawMessage) {
+    public HttpMessage(byte[] rawMessage) {
         this.headers = new HashMap<>();
         parseRawMessage(rawMessage);
     }
@@ -82,22 +96,27 @@ public abstract class HttpMessage {
     }
 
     public void setBody(byte[] body, String type) {
-        setHeader(Header.Content_Type, MIME.getMimeType(type));
+        setHeader(Header.Content_Type, type);
         setBody(body);
     }
 
-    public void setBody(String resource){
+    public void setBody(String resource) throws IOException {
         setBody(Searcher.pathOf(resource));
     }
 
-    public void setBody(Path absolutePath) {
+    public void setBody(Path absolutePath) throws IOException {
         if (!Files.exists(absolutePath)) {
-            throw new IllegalArgumentException("File not found: " + absolutePath);
+            throw new FileNotFoundException();
         }
-        try {
-            setBody(Files.readAllBytes(absolutePath), MIME.getMimeType(MIME.getFileExtension(absolutePath.toString())));
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read file: " + absolutePath, e);
+        try (FileInputStream fis = new FileInputStream(absolutePath.toFile())) {
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            while ((bytesRead = fis.read(buffer)) != -1) {
+                baos.write(buffer, 0, bytesRead);
+            }
+            byte[] fileBytes = baos.toByteArray();
+            setBody(fileBytes, MIME.getMimeType(MIME.getFileExtension(absolutePath.toString())));
         }
     }
 
@@ -105,16 +124,35 @@ public abstract class HttpMessage {
 
     @Override
     public String toString() {
-        return getStartLine() + "\r\n" + getFormattedHeaders() + "\r\n" + new String(body);
+        if(MIME.isTextType(getHeaderVal(Header.Content_Type))){
+            return getStartLine() + "\r\n" + getFormattedHeaders() + "\r\n" + (body == null ? "" : new String(body));
+        }
+        return getStartLine() + "\r\n" + getFormattedHeaders() + "\r\n" + (body == null ? "" : getHeaderVal(Header.Content_Type) + ": "+ body.length + " bytes");
     }
 
-    private void parseRawMessage(String rawMessage) {
-        if (rawMessage == null || rawMessage.isEmpty()) {
+    public byte[] toBytes() {
+        byte[] headerBytes = (getStartLine() + "\r\n" + getFormattedHeaders() + "\r\n").getBytes();
+        if(body == null){
+            return headerBytes;
+        }
+        byte[] message = new byte[headerBytes.length + body.length];
+        System.arraycopy(headerBytes, 0, message, 0, headerBytes.length);
+        System.arraycopy(body, 0, message, headerBytes.length, body.length);
+        return message;
+    }
+
+    private void parseRawMessage(byte[] rawMessage) {
+        if (rawMessage == null || rawMessage.length == 0) {
             throw new IllegalArgumentException("Raw HTTP message cannot be null or empty");
         }
-        int i = 0;
-        String[] lines = rawMessage.split("\r\n");
-        setStartLine(lines[i++]);
+
+        int headerEndIndex = findHeaderEnd(rawMessage);
+
+        byte[] headerBytes = Arrays.copyOfRange(rawMessage, 0, headerEndIndex);
+        String headers = new String(headerBytes, StandardCharsets.UTF_8);
+        String[] lines = headers.split("\r\n");
+        setStartLine(lines[0]);
+        int i = 1;
         while (i < lines.length && !lines[i].isEmpty()) {
             String line = lines[i];
             int colonIndex = line.indexOf(":");
@@ -128,15 +166,19 @@ public abstract class HttpMessage {
             i++;
         }
 
-        i++;
-        StringBuilder bodyBuilder = new StringBuilder();
-        while (i < lines.length) {
-            bodyBuilder.append(lines[i]);
-            bodyBuilder.append("\r\n");
-            i++;
-        }
-        String body = bodyBuilder.toString().trim();
-        setBody(body.getBytes());
+        byte[] bodyBytes = Arrays.copyOfRange(rawMessage, headerEndIndex + 4, rawMessage.length);
+        setBody(bodyBytes);
     }
+
+    private int findHeaderEnd(byte[] rawMessage) {
+        for (int i = 0; i < rawMessage.length - 3; i++) {
+            if (rawMessage[i] == 0x0D && rawMessage[i + 1] == 0x0A && // \r\n
+                    rawMessage[i + 2] == 0x0D && rawMessage[i + 3] == 0x0A) { // \r\n
+                return i;
+            }
+        }
+        return -1;
+    }
+
 
 }

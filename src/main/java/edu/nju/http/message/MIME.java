@@ -1,6 +1,7 @@
 package edu.nju.http.message;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -18,8 +19,7 @@ public class MIME {
     private static final String DEFAULT_TYPE = "application/octet-stream";
 
     private static final Map<String, String> mimeTypes = new HashMap<>();
-    private static final Set<String> textTypes = Set.of("text/html", "text/plain", "text/css", "text/javascript");
-    private static final Set<String> imageTypes = Set.of("image/png", "image/jpeg", "image/gif");
+    private static final Set<String> textTypes = new HashSet<>();
 
     static {
         // 文本类型
@@ -42,7 +42,17 @@ public class MIME {
         mimeTypes.put("default", DEFAULT_TYPE);
     }
 
+    static {
+        textTypes.add(TEXT_HTML);
+        textTypes.add(TEXT_CSS);
+        textTypes.add(TEXT_JAVASCRIPT);
+        textTypes.add(TEXT_PLAIN);
+    }
+
     public static String getFileExtension(String path) {
+        if(path == null) {
+            return "";
+        }
         int lastDotIndex = path.lastIndexOf('.');
         if (lastDotIndex == -1 || lastDotIndex == path.length() - 1) {
             return ""; // 没有扩展名
@@ -54,16 +64,20 @@ public class MIME {
         return mimeTypes.getOrDefault(extension.toLowerCase(), DEFAULT_TYPE);
     }
 
+    public static boolean supportType(String type) {
+        return mimeTypes.containsValue(type);
+    }
+
+    public static boolean supportFileExtension(String extension) {
+        return mimeTypes.containsKey(extension);
+    }
+
     public static boolean isTextType(String mimeType) {
         return textTypes.contains(mimeType);
     }
 
-    public static boolean isImageType(String mimeType) {
-        return imageTypes.contains(mimeType);
-    }
-
     public static boolean isBinaryType(String mimeType) {
-        return !isTextType(mimeType) && !isImageType(mimeType);
+        return !isTextType(mimeType);
     }
 
 }

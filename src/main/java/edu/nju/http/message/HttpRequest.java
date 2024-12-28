@@ -42,7 +42,7 @@ public class HttpRequest extends HttpMessage {
      * 使用原始消息构造 HTTP 请求
      * @param rawMessage 原始消息
      */
-    public HttpRequest(String rawMessage) {
+    public HttpRequest(byte[] rawMessage) {
         super(rawMessage);
     }
 

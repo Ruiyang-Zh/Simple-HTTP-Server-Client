@@ -129,9 +129,9 @@ public class Config {
 
         DEFAULT_PAGE = serverConfig.optString("default_page", "index.html");
         DEFAULT_ENCODING = serverConfig.optString("default_encoding", "UTF-8");
-        DEFAULT_CONTENT_TYPE = serverConfig.optString("default_content_type", "text/html");
+        DEFAULT_CONTENT_TYPE = serverConfig.optString("default_content_type", "application/octet-stream");
 
-        STATIC_RESOURCE_DIR = serverConfig.optString("static_resource_dir", "static/");
+        STATIC_RESOURCE_DIR = serverConfig.optString("static_resource_dir", "static");
         LOG_DIR = serverConfig.optString("log_dir", "log");
         DATA_DIR = serverConfig.optString("data_dir", "data");
 

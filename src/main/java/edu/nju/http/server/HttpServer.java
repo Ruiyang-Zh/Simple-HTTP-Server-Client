@@ -5,6 +5,7 @@ import edu.nju.http.message.HttpResponse;
 import edu.nju.http.utils.Log;
 import edu.nju.http.message.constant.Header;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -120,7 +121,7 @@ public class HttpServer {
     private void read(SelectionKey key) {
         SocketChannel client = (SocketChannel) key.channel();
         ByteBuffer buffer = ByteBuffer.allocate(Config.BUFFER_SIZE);
-        StringBuilder requestBuilder = new StringBuilder();
+        ByteArrayOutputStream requestData = new ByteArrayOutputStream();
 
         try {
             int bytesRead;
@@ -128,7 +129,7 @@ public class HttpServer {
                 buffer.flip();
                 byte[] data = new byte[buffer.remaining()];
                 buffer.get(data);
-                requestBuilder.append(new String(data, Config.DEFAULT_ENCODING));
+                requestData.write(data);
                 buffer.clear();
             }
 
@@ -138,13 +139,14 @@ public class HttpServer {
                 return;
             }
 
-            String requestData = requestBuilder.toString();
-            Log.debug("Server", "Request received: \n" + requestData);
+            HttpRequest request = new HttpRequest(requestData.toByteArray());
+
+            Log.debug("Server", "Request received: \n" + request);
 
             if(threadPool != null) {
-                threadPool.execute(() -> processRequest(key, requestData));
+                threadPool.execute(() -> processRequest(key, request));
             } else {
-                processRequest(key, requestData);
+                processRequest(key, request);
             }
         } catch (IOException e) {
             Log.error("Server", "Error reading request", e);
@@ -165,7 +167,7 @@ public class HttpServer {
         HttpResponse response = (HttpResponse) key.attachment();
 
         try {
-            ByteBuffer buffer = ByteBuffer.wrap(response.toString().getBytes());
+            ByteBuffer buffer = ByteBuffer.wrap(response.toBytes());
             while (buffer.hasRemaining()) {
                 client.write(buffer);
             }
@@ -189,8 +191,7 @@ public class HttpServer {
         }
     }
 
-    private void processRequest (SelectionKey key, String requestData) {
-        HttpRequest request = new HttpRequest(requestData);
+    private void processRequest (SelectionKey key, HttpRequest request) {
         HttpResponse response = ServerHandler.handle(request);
         key.attach(response);
         key.interestOps(SelectionKey.OP_WRITE);

@@ -38,7 +38,7 @@ public class HttpResponse extends HttpMessage{
      * 使用原始消息构造 HTTP 响应
      * @param rawMessage 原始消息
      */
-    public HttpResponse(String rawMessage) {
+    public HttpResponse(byte[] rawMessage) {
         super(rawMessage);
     }
 
