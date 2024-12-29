@@ -12,6 +12,7 @@ public class Status {
     public static int NOT_MODIFIED = 304;
     public static int BAD_REQUEST = 400;
     public static int UNAUTHORIZED = 401;
+    public static int FORBIDDEN = 403;
     public static int NOT_FOUND = 404;
     public static int METHOD_NOT_ALLOWED = 405;
     public static int CONFLICT = 409;
@@ -27,6 +28,7 @@ public class Status {
         STATUS_PHRASES.put(Status.NOT_MODIFIED, "Not Modified");
         STATUS_PHRASES.put(Status.BAD_REQUEST, "Bad Request");
         STATUS_PHRASES.put(Status.UNAUTHORIZED, "Unauthorized");
+        STATUS_PHRASES.put(Status.FORBIDDEN, "Forbidden");
         STATUS_PHRASES.put(Status.NOT_FOUND, "Not Found");
         STATUS_PHRASES.put(Status.METHOD_NOT_ALLOWED, "Method Not Allowed");
         STATUS_PHRASES.put(Status.CONFLICT, "Conflict");
@@ -34,6 +36,7 @@ public class Status {
 
         DEFAULT_ERROR_PAGES.put(Status.BAD_REQUEST, Config.STATIC_RESOURCE_DIR + "/400.html");
         DEFAULT_ERROR_PAGES.put(Status.UNAUTHORIZED, Config.STATIC_RESOURCE_DIR + "/401.html");
+        DEFAULT_ERROR_PAGES.put(Status.FORBIDDEN, Config.STATIC_RESOURCE_DIR + "/403.html");
         DEFAULT_ERROR_PAGES.put(Status.NOT_FOUND, Config.STATIC_RESOURCE_DIR + "/404.html");
         DEFAULT_ERROR_PAGES.put(Status.METHOD_NOT_ALLOWED, Config.STATIC_RESOURCE_DIR + "/405.html");
         DEFAULT_ERROR_PAGES.put(Status.CONFLICT, Config.STATIC_RESOURCE_DIR + "/409.html");

@@ -61,8 +61,8 @@ public class ResponseBuilder {
     protected static HttpResponse createErrorResponse(String version, int statusCode) {
         HttpResponse response = new HttpResponse(version, statusCode);
         try {
-            response.setBody(Searcher.pathOf(Status.getDefaultErrorPage(statusCode)));
-        } catch (IOException e) {
+            response.setBody(Searcher.getResource(Status.getDefaultErrorPage(statusCode)));
+        } catch (IOException | IllegalAccessException e) {
             Log.error("ServerHandler", "Failed to return error response, use the plain text instead", e);
             response.setBody(statusCode + ": " +  Status.getStatusPhrase(statusCode));
         }

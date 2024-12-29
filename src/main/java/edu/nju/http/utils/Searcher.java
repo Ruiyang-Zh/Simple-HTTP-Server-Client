@@ -1,16 +1,24 @@
 package edu.nju.http.utils;
 
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class Searcher {
-    // 外部资源目录
+    // 基础目录
     public static final String BASE_DIR = System.getProperty("app.base.dir", System.getProperty("user.dir"));
 
+    // 外部可访问资源目录
+    public static final String EXTERNAL_DIR = getExternalPath("resources").toString();
+
+    // 内部可访问资源目录
+    public static final String INTERNAL_DIR = getInternalPath("static").toString();
+
+
     /**
-     * 查找资源路径（优先外部资源）
+     * 查找路径
      */
     public static Path pathOf(String relativePath) {
         Log.debug("Searcher", "Attempting to find resource: " + relativePath);
@@ -34,20 +42,39 @@ public class Searcher {
         return null;
     }
 
+    /**
+     * 对外部或内部找到的资源做安全检查，不安全则抛异常
+     */
+    public static Path getResource(String relativePath) throws IllegalAccessException {
+        Path externalPath = getExternalPath("resources/" + relativePath);
+        if (externalPath != null && Files.exists(externalPath)) {
+            if (isSafeExternal(externalPath)) {
+                Log.debug("Searcher", "External resource found: " + externalPath);
+                return externalPath;
+            } else {
+                throw new IllegalAccessException("Unsafe path detected: " + externalPath);
+            }
+        }
+        Log.debug("Searcher", "External resource not found: " + relativePath);
+        Path internalPath = getInternalPath(relativePath);
+        if (internalPath != null && Files.exists(internalPath)) {
+            if (isSafeInternal(internalPath)) {
+                return internalPath;
+            } else {
+                throw new IllegalAccessException("Unsafe path detected: " + internalPath);
+            }
+        }
+        Log.debug("Searcher", "Internal resource not found: " + relativePath);
+        return null;
+    }
+
     public static boolean exists(String relativePath) {
         return pathOf(relativePath) != null;
     }
 
     public static Path getExternalPath(String relativePath) {
         try {
-            Path externalPath = Paths.get(BASE_DIR, relativePath).normalize();
-
-            if (!isSafePath(externalPath)) {
-                Log.debug("Searcher", "Unsafe external path detected: " + relativePath);
-                return null;
-            }
-
-            return externalPath;
+            return Paths.get(BASE_DIR, relativePath).normalize();
         } catch (Exception e) {
             Log.error("Searcher", "Failed to get external path: " + relativePath, e);
             return null;
@@ -58,33 +85,13 @@ public class Searcher {
         try {
             URL resourceUrl = Searcher.class.getClassLoader().getResource(relativePath);
             if (resourceUrl != null) {
-                Path internalPath = Paths.get(resourceUrl.toURI()).normalize();
-
-                if (!isSafePath(internalPath)) {
-                    Log.debug("Searcher", "Unsafe internal path detected: " + relativePath);
-                    return null;
-                }
-
-                return internalPath;
+                return Paths.get(resourceUrl.toURI()).normalize();
             } else {
                 return null;
             }
         } catch (Exception e) {
             Log.error("Searcher", "Failed to get internal path: " + relativePath, e);
         }
-
-        return null;
-    }
-
-    public static String getAbsolutePath(String relativePath) {
-        Path path = pathOf(relativePath);
-        if (path != null && path.toFile().exists()) {
-            String absolutePath = path.toAbsolutePath().toString();
-            Log.debug("Searcher", "Absolute path resolved: " + absolutePath);
-            return absolutePath;
-        }
-
-        Log.warn("Searcher", "Failed to resolve absolute path for: " + relativePath);
         return null;
     }
 
@@ -107,25 +114,11 @@ public class Searcher {
     }
 
     private static boolean isSafeExternal(Path path) {
-        try {
-            Path basePath = Paths.get(BASE_DIR).normalize();
-            return path.startsWith(basePath);
-        } catch (Exception e) {
-            return false;
-        }
+       return path.startsWith(Paths.get(EXTERNAL_DIR).normalize());
     }
 
     private static boolean isSafeInternal(Path path) {
-        try {
-            String internalBase = Searcher.class.getClassLoader()
-                    .getResource("")
-                    .toURI()
-                    .getPath();
-            Path basePath = Paths.get(internalBase).normalize();
-            return path.startsWith(basePath);
-        } catch (Exception e) {
-            return false;
-        }
+        return path.startsWith(Paths.get(INTERNAL_DIR).normalize());
     }
 
 }

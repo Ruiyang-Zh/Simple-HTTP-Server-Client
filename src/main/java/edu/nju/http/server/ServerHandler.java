@@ -64,8 +64,6 @@ public class ServerHandler {
             return ResponseBuilder.createRedirectResponse(request.getVersion(), rule.statusCode, rule.target);
         }
 
-        target = target.equals("/") ? Config.DEFAULT_PAGE : target;
-
         // USER_DIR 下的资源需要验证登陆
         if (target.startsWith("/" + Config.USER_DIR)){
             String username = UserSystem.getInstance().validateSession(request);
@@ -74,8 +72,17 @@ public class ServerHandler {
             }
         }
 
+        target = target.equals("/") ? Config.DEFAULT_PAGE : target;
+        target = Config.STATIC_RESOURCE_DIR + target; // 仅支持静态资源
         // 查找资源路径
-        Path filePath = Searcher.pathOf(Config.STATIC_RESOURCE_DIR + target);
+        Path filePath;
+        try {
+            filePath = Searcher.getResource(target);
+        } catch (IllegalAccessException e) {
+            Log.error("ServerHandler", "Failed to find resource: " + target, e);
+            return ResponseBuilder.createErrorResponse(request.getVersion(), Status.FORBIDDEN);
+        }
+
         if (filePath == null || !Files.exists(filePath)) {
             Log.info("Server: ", "File not found: " + target);
             return ResponseBuilder.createErrorResponse(request.getVersion(), Status.NOT_FOUND);

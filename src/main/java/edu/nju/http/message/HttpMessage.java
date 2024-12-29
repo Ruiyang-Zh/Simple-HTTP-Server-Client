@@ -86,7 +86,7 @@ public abstract class HttpMessage {
 
     // ==============Body================
 
-    public void setBody(byte[] body) {
+    private void setBody(byte[] body) {
         this.body = body;
         if(body == null)
             return;

@@ -50,9 +50,13 @@ public class Config {
 
     // ================== 资源路径 ==================
     public static final String STATIC_RESOURCE_DIR;
-    public static final String LOG_DIR;
-    public static final String DATA_DIR;
     public static final String USER_DIR;
+
+    // ================== 配置文件路径 ==================
+    private static final String CONFIG_FILE = "config/config.json";
+
+    // ================== 数据存储路径 ==================
+    public static final String DATA_DIR;
 
     // ================== 重定向规则 ==================
     public static class RedirectRule {
@@ -67,11 +71,9 @@ public class Config {
 
     public static final Map<String, RedirectRule> REDIRECT_RULES = new HashMap<>();
 
-    // ================== 日志级别 ==================
+    // ================== 日志设置 ==================
+    public static final String LOG_DIR;
     public static final int LOG_LEVEL = 2; // 0: none, 1: info, 2: debug
-
-    // ================== 配置文件路径 ==================
-    private static final String CONFIG_FILE = "config/config.json";
 
     static {
         JSONObject configJson = null;
@@ -138,9 +140,9 @@ public class Config {
         DEFAULT_CONTENT_TYPE = serverConfig.optString("default_content_type", "application/octet-stream");
 
         STATIC_RESOURCE_DIR = serverConfig.optString("static_resource_dir", "static");
-        LOG_DIR = serverConfig.optString("log_dir", "log");
-        DATA_DIR = serverConfig.optString("data_dir", "data");
         USER_DIR = serverConfig.optString("user_path", "user");
+        DATA_DIR = serverConfig.optString("data_dir", "data");
+        LOG_DIR = DATA_DIR + "/log";
 
         JSONArray redirects = serverConfig.optJSONArray("redirects");
         if (redirects != null) {

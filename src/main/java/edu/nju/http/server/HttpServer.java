@@ -199,8 +199,43 @@ public class HttpServer {
 
 
     public static void main(String[] args) {
-        HttpServer server = new HttpServer();
+        String host = Config.HOST;
+        int port = Config.PORT;
+
+        for (int i = 0; i < args.length; i++) {
+            String arg = args[i];
+            switch (arg) {
+                case "-h":
+                case "--host":
+                    if (i + 1 < args.length) {
+                        host = args[++i];
+                    } else {
+                        System.err.println("Error: Missing value for " + arg);
+                        System.exit(1);
+                    }
+                    break;
+                case "-p":
+                case "--port":
+                    if (i + 1 < args.length) {
+                        try {
+                            port = Integer.parseInt(args[++i]);
+                        } catch (NumberFormatException e) {
+                            System.err.println("Error: Port must be an integer.");
+                            System.exit(1);
+                        }
+                    } else {
+                        System.err.println("Error: Missing value for " + arg);
+                        System.exit(1);
+                    }
+                    break;
+                default:
+                    System.err.println("Warning: Unknown option " + arg);
+            }
+        }
+
         Log.init(Config.LOG_LEVEL);
+
+        HttpServer server = new HttpServer(host, port);
         server.start();
     }
 }
