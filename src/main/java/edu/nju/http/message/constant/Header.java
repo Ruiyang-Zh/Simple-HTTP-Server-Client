@@ -14,5 +14,7 @@ public class Header {
     public static final String Last_Modified = "Last-Modified";
     public static final String ETag = "ETag";
     public static final String Cache_Control = "Cache-Control";
+    public static final String Set_Cookie = "Set-Cookie";
+    public static final String Cookie = "Cookie";
 
 }

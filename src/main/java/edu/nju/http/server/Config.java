@@ -36,6 +36,9 @@ public class Config {
     // ================== 读写配置 ==================
     public static final int BUFFER_SIZE;
 
+    // ================== 会话配置 ==================
+    public static final int SESSION_EXPIRY_TIME;
+
     // ================== 缓存配置 ==================
     public static final boolean ENABLE_CACHE;
     public static final String CACHE_CONTROL;
@@ -49,6 +52,7 @@ public class Config {
     public static final String STATIC_RESOURCE_DIR;
     public static final String LOG_DIR;
     public static final String DATA_DIR;
+    public static final String USER_DIR;
 
     // ================== 重定向规则 ==================
     public static class RedirectRule {
@@ -124,6 +128,8 @@ public class Config {
 
         BUFFER_SIZE = serverConfig.optInt("buffer_size", 2048);
 
+        SESSION_EXPIRY_TIME = serverConfig.optInt("session_expiry_time", 3600);
+
         ENABLE_CACHE = serverConfig.optBoolean("enable_cache", false);
         CACHE_CONTROL = serverConfig.optString("cache_control", "public,max-age=3600");
 
@@ -134,6 +140,7 @@ public class Config {
         STATIC_RESOURCE_DIR = serverConfig.optString("static_resource_dir", "static");
         LOG_DIR = serverConfig.optString("log_dir", "log");
         DATA_DIR = serverConfig.optString("data_dir", "data");
+        USER_DIR = serverConfig.optString("user_path", "user");
 
         JSONArray redirects = serverConfig.optJSONArray("redirects");
         if (redirects != null) {

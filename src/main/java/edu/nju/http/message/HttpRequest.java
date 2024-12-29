@@ -65,16 +65,16 @@ public class HttpRequest extends HttpMessage {
             }
             return uri.substring(index + 1);
         }else if(method.equals(Method.POST)){
-            return new String(body);
+            return getBodyAsString();
         }
         return "";
     }
 
-    public void setPath(String path) {
+    public void setTarget(String path) {
         uri = path + (uri.contains("?") ? uri.substring(uri.indexOf("?")) : "");
     }
 
-    public String getPath() {
+    public String getTarget() {
         int index = uri.indexOf('?');
         if (index == -1) {
             return uri;

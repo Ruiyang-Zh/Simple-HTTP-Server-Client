@@ -1,8 +1,6 @@
 package edu.nju.http.message;
 
 import edu.nju.http.message.constant.*;
-import edu.nju.http.server.Config;
-import edu.nju.http.utils.Searcher;
 import lombok.Getter;
 
 import java.io.ByteArrayOutputStream;
@@ -100,12 +98,12 @@ public abstract class HttpMessage {
         setBody(body);
     }
 
-    public void setBody(String resource) throws IOException {
-        setBody(Searcher.pathOf(resource));
+    public void setBody(String plainText) {
+        setBody(plainText.getBytes(), MIME.TEXT_PLAIN);
     }
 
     public void setBody(Path absolutePath) throws IOException {
-        if (!Files.exists(absolutePath)) {
+        if (absolutePath == null || !Files.exists(absolutePath)) {
             throw new FileNotFoundException();
         }
         try (FileInputStream fis = new FileInputStream(absolutePath.toFile())) {
@@ -120,12 +118,16 @@ public abstract class HttpMessage {
         }
     }
 
+    public String getBodyAsString() {
+        return body == null ? "" : new String(body);
+    }
+
     // =============Utils=================
 
     @Override
     public String toString() {
         if(MIME.isTextType(getHeaderVal(Header.Content_Type))){
-            return getStartLine() + "\r\n" + getFormattedHeaders() + "\r\n" + (body == null ? "" : new String(body));
+            return getStartLine() + "\r\n" + getFormattedHeaders() + "\r\n" + getBodyAsString();
         }
         return getStartLine() + "\r\n" + getFormattedHeaders() + "\r\n" + (body == null ? "" : getHeaderVal(Header.Content_Type) + ": "+ body.length + " bytes");
     }
