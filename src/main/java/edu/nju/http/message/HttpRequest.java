@@ -8,11 +8,19 @@ import java.util.Map;
 
 import edu.nju.http.message.constant.*;
 
-@Getter
+@Getter @Setter
 public class HttpRequest extends HttpMessage {
     private String method;
-    @Setter
     private String uri;
+
+    /**
+     * 构造默认 HTTP 请求
+     */
+    public HttpRequest() {
+        super();
+        this.method = Method.GET;
+        this.uri = "/";
+    }
 
     /**
      * 使用成员参数构造 HTTP 请求
@@ -44,6 +52,16 @@ public class HttpRequest extends HttpMessage {
      */
     public HttpRequest(byte[] rawMessage) {
         super(rawMessage);
+    }
+
+    /**
+     * 创建 HTTP 请求的副本
+     * @param request 源 HTTP 请求
+     */
+    public HttpRequest(HttpRequest request) {
+        super(request);
+        this.method = request.method;
+        this.uri = request.uri;
     }
 
     public String getStartLine() {

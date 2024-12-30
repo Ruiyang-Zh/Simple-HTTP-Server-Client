@@ -129,6 +129,11 @@ public class ServerHandler {
      * 检查客户端缓存头部
      */
     private static boolean checkClientCache(HttpRequest request, Path filePath) {
+        if(request.getHeaderVal(Header.Cache_Control) != null && request.getHeaderVal(Header.Cache_Control).contains("no-cache")) {
+            Log.debug("ServerHandler", "client cache-control: no-cache");
+            return false;
+        }
+
         try {
             FileTime lastModifiedTime = Files.getLastModifiedTime(filePath);
             String ifModifiedSince = request.getHeaderVal(Header.If_Modified_Since);

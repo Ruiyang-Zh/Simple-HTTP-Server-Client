@@ -16,7 +16,6 @@ import java.util.Map;
 
 /**
  * Config - 服务器配置类
- * 外部资源配置直接加载，内部资源配置按 "server" 条目加载。
  */
 public class Config {
     // ================== 服务器基础信息 ==================
@@ -32,8 +31,6 @@ public class Config {
     public static final boolean THREAD_POOL;
     public static final int MAX_THREADS;
     public static final int MAX_CONNECTIONS;
-
-    // ================== 读写配置 ==================
     public static final int BUFFER_SIZE;
 
     // ================== 会话配置 ==================
@@ -77,8 +74,6 @@ public class Config {
 
     static {
         JSONObject configJson = null;
-        boolean isExternal = false;
-
         try {
             // 优先加载外部配置
             Path externalPath = Searcher.getExternalPath(CONFIG_FILE);
@@ -87,7 +82,6 @@ public class Config {
                 FileInputStream fis = new FileInputStream(externalPath.toFile());
                 configJson = new JSONObject(new JSONTokener(fis));
                 fis.close();
-                isExternal = true;
             } else {
                 // 加载内部 resources 配置
                 Log.debug("Config", "External configuration file not found. Loading internal configuration.");
@@ -105,12 +99,13 @@ public class Config {
             throw new RuntimeException("Failed to load configuration file.", e);
         }
 
-        JSONObject serverConfig = null;
+        JSONObject serverConfig;
         if(configJson == null){
             Log.debug("Config", "Configuration file not found. Using default settings.");
             serverConfig = new JSONObject();
         } else {
-            serverConfig = isExternal ? configJson : configJson.optJSONObject("server");
+            JSONObject tmp = configJson.optJSONObject("server");
+            serverConfig = tmp == null ? configJson : tmp;
         }
 
         SERVER_NAME = serverConfig.optString("server_name", "SimpleHttpServer");
@@ -127,7 +122,6 @@ public class Config {
         if(maxThreads <= 0) maxThreads = 4;
         MAX_THREADS = Math.min(maxThreads, cores * 2);
         MAX_CONNECTIONS = serverConfig.optInt("max_connections", 1000);
-
         BUFFER_SIZE = serverConfig.optInt("buffer_size", 2048);
 
         SESSION_EXPIRY_TIME = serverConfig.optInt("session_expiry_time", 3600);

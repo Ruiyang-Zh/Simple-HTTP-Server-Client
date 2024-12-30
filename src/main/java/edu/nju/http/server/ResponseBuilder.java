@@ -89,7 +89,7 @@ public class ResponseBuilder {
             String eTag = String.valueOf(lastModifiedTime.toMillis());
 
             response.setHeader(Header.ETag, eTag);
-            response.setHeader(Header.Last_Modified, ZonedDateTime.now().format(DateTimeFormatter.RFC_1123_DATE_TIME));
+            response.setHeader(Header.Last_Modified, lastModifiedTime.toString());
             Log.debug("ServerHandler", "Set resource headers: ETag=" + eTag);
         } catch (IOException e) {
             Log.error("ServerHandler", "Failed to set resource headers", e);

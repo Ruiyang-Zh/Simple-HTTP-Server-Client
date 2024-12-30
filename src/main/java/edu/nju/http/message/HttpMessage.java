@@ -52,6 +52,17 @@ public abstract class HttpMessage {
         parseRawMessage(rawMessage);
     }
 
+    /**
+     * 创建 HTTP 消息的副本
+     * @param message 源 HTTP 消息
+     */
+    public HttpMessage(HttpMessage message) {
+        this.version = message.version;
+        this.headers = new HashMap<>(message.headers);
+        this.body = new byte[message.body.length];
+        System.arraycopy(message.body, 0, this.body, 0, message.body.length);
+    }
+
     // =============StartLine=================
 
     public abstract String getStartLine();

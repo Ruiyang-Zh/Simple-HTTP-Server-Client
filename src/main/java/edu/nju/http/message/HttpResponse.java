@@ -35,6 +35,16 @@ public class HttpResponse extends HttpMessage{
     }
 
     /**
+     * 创建 HTTP 响应的副本
+     * @param response 源 HTTP 响应
+     */
+    public HttpResponse(HttpResponse response) {
+        super(response);
+        this.statusCode = response.statusCode;
+        this.statusMessage = response.statusMessage;
+    }
+
+    /**
      * 使用原始消息构造 HTTP 响应
      * @param rawMessage 原始消息
      */
@@ -56,6 +66,10 @@ public class HttpResponse extends HttpMessage{
     public void setStatus(int statusCode) {
         this.statusCode = statusCode;
         this.statusMessage = Status.getStatusPhrase(statusCode);
+    }
+
+    public String getStatus() {
+        return this.statusCode + " " + this.statusMessage;
     }
 
 }
