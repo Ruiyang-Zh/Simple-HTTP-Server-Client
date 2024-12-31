@@ -16,5 +16,6 @@ public class Header {
     public static final String Cache_Control = "Cache-Control";
     public static final String Set_Cookie = "Set-Cookie";
     public static final String Cookie = "Cookie";
+    public static final String Transfer_Encoding = "Transfer-Encoding";
 
 }

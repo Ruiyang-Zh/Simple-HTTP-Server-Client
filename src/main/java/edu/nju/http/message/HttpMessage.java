@@ -105,7 +105,7 @@ public abstract class HttpMessage {
     }
 
     public void setBody(byte[] body, String type) {
-        setHeader(Header.Content_Type, type);
+        setHeader(Header.Content_Type, type == null ? MIME.DEFAULT_TYPE : type);
         setBody(body);
     }
 
@@ -137,7 +137,8 @@ public abstract class HttpMessage {
 
     @Override
     public String toString() {
-        if(MIME.isTextType(getHeaderVal(Header.Content_Type))){
+        String bodyType = getHeaderVal(Header.Content_Type);
+        if(MIME.isTextType(bodyType == null ? "" : bodyType.split(";")[0])){
             return getStartLine() + "\r\n" + getFormattedHeaders() + "\r\n" + getBodyAsString();
         }
         return getStartLine() + "\r\n" + getFormattedHeaders() + "\r\n" + (body == null ? "" : getHeaderVal(Header.Content_Type) + ": "+ body.length + " bytes");
@@ -180,10 +181,15 @@ public abstract class HttpMessage {
         }
 
         byte[] bodyBytes = Arrays.copyOfRange(rawMessage, headerEndIndex + 4, rawMessage.length);
+
+        // 不完全的构造，消息体还未设置
+        if(bodyBytes.length == 0 && getHeaderVal(Header.Content_Length) != null)
+            return;
+
         setBody(bodyBytes);
     }
 
-    private int findHeaderEnd(byte[] rawMessage) {
+    public static int findHeaderEnd(byte[] rawMessage) {
         for (int i = 0; i < rawMessage.length - 3; i++) {
             if (rawMessage[i] == 0x0D && rawMessage[i + 1] == 0x0A && // \r\n
                     rawMessage[i + 2] == 0x0D && rawMessage[i + 3] == 0x0A) { // \r\n

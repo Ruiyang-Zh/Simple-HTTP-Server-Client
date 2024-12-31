@@ -57,7 +57,7 @@ public class UserSystem {
 
         Log.info("UserSystem", "Register success.: " + username);
 
-        return ResponseBuilder.createSuccessResponse(request.getVersion(), "Register success.");
+        return ResponseBuilder.createSuccessResponse(request.getVersion(), "Register success.\n username: " + username);
     }
 
     /**
@@ -97,7 +97,7 @@ public class UserSystem {
         sessions.put(sessionId, new Session(username, expiryTime));
 
         // 构建成功响应，设置Cookie
-        HttpResponse response = ResponseBuilder.createSuccessResponse(request.getVersion(), "Login success.");
+        HttpResponse response = ResponseBuilder.createSuccessResponse(request.getVersion(), "Login success.\n username: " + username);
         setCookie(response, sessionId, Config.SESSION_EXPIRY_TIME);
         return response;
     }

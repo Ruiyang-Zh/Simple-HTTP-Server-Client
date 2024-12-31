@@ -23,10 +23,10 @@ public class ClientDriver {
         Log.init(Config.LOG_LEVEL);
 
         System.out.println("Welcome to the HTTP Client!");
+        help();
         boolean running = true;
 
         while (running) {
-            help();
             String inputLine = scanner.nextLine().trim();
             if (inputLine.isEmpty()) {
                 continue;
@@ -121,7 +121,7 @@ public class ClientDriver {
             switch (opt) {
                 case "-m":
                     if (++i < tokens.length) {
-                        request.setMethod(tokens[i]);
+                        request.setMethod(tokens[i].toUpperCase());
                     }
                     break;
                 case "-h":
@@ -154,6 +154,9 @@ public class ClientDriver {
             }
         }
 
+        System.out.println("\n--- HTTP Request ---");
+        System.out.println(request);
+
         try {
             HttpResponse response = client.send(host, port, request);
 
@@ -163,14 +166,14 @@ public class ClientDriver {
                 System.out.println(response.getFormattedHeaders());
 
                 String contentType = response.getHeaderVal("Content-Type");
-                if (MIME.isTextType(contentType)) {
-                    System.out.println("Body: " + response.getBodyAsString());
+                if (MIME.isTextType(contentType == null ? "" : contentType.split(";")[0])) {
+                    System.out.println("[Body]:\n" + response.getBodyAsString());
                 } else {
                     String target = request.getTarget();
                     if (target == null || target.isEmpty()) {
                         target = "response.bin";
                     }
-                    saveBinaryData(response.getBody(), target);
+                    saveBinaryData(contentType, response.getBody(), target);
                 }
             } else {
                 System.out.println("Failed to receive a valid response.");
@@ -236,12 +239,15 @@ public class ClientDriver {
     /**
      * 将二进制数据存储到 Config.DATA_DIR 下
      */
-    private static void saveBinaryData(byte[] data, String path) {
+    private static void saveBinaryData(String type, byte[] data, String path) {
         if (data == null || data.length == 0) {
             System.out.println("No binary data to save.");
             return;
         }
         String fileName = path.replaceAll("^/", "");
+        if(!fileName.matches(".*\\.[a-zA-Z0-9]+$")){
+            fileName = fileName + "." + MIME.toExtension(type);
+        }
         File outFile = new File(Config.DATA_DIR, fileName);
 
         if (!outFile.getParentFile().exists()) {

@@ -16,6 +16,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -126,22 +127,73 @@ public class HttpClient {
         }
 
         try {
-
-            ByteBuffer buffer = ByteBuffer.wrap(request.toBytes());
-            while (buffer.hasRemaining()) {
-                connection.channel.write(buffer);
+            // 发送请求
+            ByteBuffer requestBuffer = ByteBuffer.wrap(request.toBytes());
+            while (requestBuffer.hasRemaining()) {
+                connection.channel.write(requestBuffer);
             }
 
+            // 读取响应
+            HttpResponse response = null;
             ByteArrayOutputStream responseData = new ByteArrayOutputStream();
             ByteBuffer responseBuffer = ByteBuffer.allocate(Config.BUFFER_SIZE);
-            int bytesRead;
-            while ((bytesRead = connection.channel.read(responseBuffer)) > 0) {
-                responseBuffer.flip();
-                responseData.write(responseBuffer.array(), 0, bytesRead);
-                responseBuffer.clear();
+
+            boolean headerParsed = false;
+            int contentLength = -1;
+            int headerEndIndex = -1;
+
+            try {
+                while (true) {
+                    int bytesRead = connection.channel.read(responseBuffer);
+                    if (bytesRead == -1) break;
+
+                    responseBuffer.flip();
+                    byte[] data = new byte[responseBuffer.remaining()];
+                    responseBuffer.get(data);
+                    responseData.write(data);
+                    responseBuffer.clear();
+
+                    // 响应头，解析以获取结束位置
+                    if (!headerParsed) {
+                        headerEndIndex = HttpResponse.findHeaderEnd(responseData.toByteArray());
+                        if (headerEndIndex != -1) {
+                            headerParsed = true;
+
+                            byte[] headerBytes = Arrays.copyOfRange(responseData.toByteArray(), 0, headerEndIndex + 4);
+                            response = new HttpResponse(headerBytes);
+
+                            String contentLengthVal = response.getHeaderVal(Header.Content_Length);
+                            if (contentLengthVal != null) {
+                                contentLength = Integer.parseInt(contentLengthVal.trim());
+                            }
+
+                            byte[] remainingBody = Arrays.copyOfRange(responseData.toByteArray(), headerEndIndex + 4, responseData.size());
+                            responseData.reset();
+                            responseData.write(remainingBody);
+                        }
+                    }
+
+                    // 响应体
+                    if (headerParsed) {
+                        if (contentLength >= 0) {
+                            if (responseData.size() >= contentLength) {
+                                byte[] body = Arrays.copyOfRange(responseData.toByteArray(), 0, contentLength);
+                                response.setBody(body, response.getHeaderVal(Header.Content_Type));
+                                break;
+                            }
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                Log.error("HttpClient", "Request/Response failed", e);
+                disconnect(host, port);
             }
 
-            HttpResponse response = new HttpResponse(responseData.toByteArray());
+            if(response == null) {
+                Log.error("HttpClient", "Unexpected error occurred while parsing response.");
+                return null;
+            }
+
             Log.info("HttpClient", "Response received: " + response.getStartLine());
 
             // 处理 Cookie
