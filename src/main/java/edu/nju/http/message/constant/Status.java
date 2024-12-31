@@ -2,6 +2,8 @@ package edu.nju.http.message.constant;
 
 import edu.nju.http.server.Config;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,7 +21,7 @@ public class Status {
     public static int INTERNAL_SERVER_ERROR = 500;
 
     private static final Map<Integer, String> STATUS_PHRASES = new HashMap<>();
-    private static final Map<Integer, String> DEFAULT_ERROR_PAGES = new HashMap<>();
+    private static final Map<Integer, Path> DEFAULT_ERROR_PAGES = new HashMap<>();
 
     static {
         STATUS_PHRASES.put(Status.OK, "OK");
@@ -34,13 +36,13 @@ public class Status {
         STATUS_PHRASES.put(Status.CONFLICT, "Conflict");
         STATUS_PHRASES.put(Status.INTERNAL_SERVER_ERROR, "Internal Server Error");
 
-        DEFAULT_ERROR_PAGES.put(Status.BAD_REQUEST, Config.STATIC_RESOURCE_DIR + "/400.html");
-        DEFAULT_ERROR_PAGES.put(Status.UNAUTHORIZED, Config.STATIC_RESOURCE_DIR + "/401.html");
-        DEFAULT_ERROR_PAGES.put(Status.FORBIDDEN, Config.STATIC_RESOURCE_DIR + "/403.html");
-        DEFAULT_ERROR_PAGES.put(Status.NOT_FOUND, Config.STATIC_RESOURCE_DIR + "/404.html");
-        DEFAULT_ERROR_PAGES.put(Status.METHOD_NOT_ALLOWED, Config.STATIC_RESOURCE_DIR + "/405.html");
-        DEFAULT_ERROR_PAGES.put(Status.CONFLICT, Config.STATIC_RESOURCE_DIR + "/409.html");
-        DEFAULT_ERROR_PAGES.put(Status.INTERNAL_SERVER_ERROR, Config.STATIC_RESOURCE_DIR + "/500.html");
+        DEFAULT_ERROR_PAGES.put(Status.BAD_REQUEST, Paths.get(Config.STATIC_RESOURCE_DIR, "400.html"));
+        DEFAULT_ERROR_PAGES.put(Status.UNAUTHORIZED, Paths.get(Config.STATIC_RESOURCE_DIR, "401.html"));
+        DEFAULT_ERROR_PAGES.put(Status.FORBIDDEN, Paths.get(Config.STATIC_RESOURCE_DIR, "403.html"));
+        DEFAULT_ERROR_PAGES.put(Status.NOT_FOUND, Paths.get(Config.STATIC_RESOURCE_DIR, "404.html"));
+        DEFAULT_ERROR_PAGES.put(Status.METHOD_NOT_ALLOWED, Paths.get(Config.STATIC_RESOURCE_DIR, "405.html"));
+        DEFAULT_ERROR_PAGES.put(Status.CONFLICT, Paths.get(Config.STATIC_RESOURCE_DIR, "409.html"));
+        DEFAULT_ERROR_PAGES.put(Status.INTERNAL_SERVER_ERROR, Paths.get(Config.STATIC_RESOURCE_DIR, "500.html"));
 
     }
 
@@ -48,7 +50,7 @@ public class Status {
         return STATUS_PHRASES.get(statusCode);
     }
 
-    public static String getDefaultErrorPage(int statusCode) {
+    public static Path getDefaultErrorPage(int statusCode) {
         return DEFAULT_ERROR_PAGES.get(statusCode);
     }
 

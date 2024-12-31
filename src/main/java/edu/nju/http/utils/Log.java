@@ -36,7 +36,7 @@ public class Log {
 
     public static void debug(String logger,String message) {
         logger = logger == null ? "DEBUG" : logger;
-        if(level > 0)
+        if(level > 1)
             System.out.printf("[%s]: %s%n", logger, message);
     }
 }

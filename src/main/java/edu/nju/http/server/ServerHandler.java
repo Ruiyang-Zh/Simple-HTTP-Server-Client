@@ -6,9 +6,11 @@ import edu.nju.http.message.constant.*;
 import edu.nju.http.utils.Log;
 import edu.nju.http.utils.Searcher;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 
 /**
@@ -73,18 +75,16 @@ public class ServerHandler {
         }
 
         target = target.equals("/") ? Config.DEFAULT_PAGE : target;
-        target = Config.STATIC_RESOURCE_DIR + target; // 仅支持静态资源
+        target = Paths.get(Config.STATIC_RESOURCE_DIR, target).toString();
         // 查找资源路径
         Path filePath;
         try {
             filePath = Searcher.getResource(target);
         } catch (IllegalAccessException e) {
-            Log.error("ServerHandler", "Failed to find resource: " + target, e);
+            Log.error("ServerHandler", "Access denied: " + target, e);
             return ResponseBuilder.createErrorResponse(request.getVersion(), Status.FORBIDDEN);
-        }
-
-        if (filePath == null || !Files.exists(filePath)) {
-            Log.info("Server: ", "File not found: " + target);
+        } catch (FileNotFoundException e) {
+            Log.warn("ServerHandler", "Resource not found: " + target);
             return ResponseBuilder.createErrorResponse(request.getVersion(), Status.NOT_FOUND);
         }
 

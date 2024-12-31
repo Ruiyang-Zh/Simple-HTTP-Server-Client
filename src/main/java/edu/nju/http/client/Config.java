@@ -39,28 +39,15 @@ public class Config {
     static {
         JSONObject configJson = null;
         try {
-            // 优先加载外部配置
-            Path externalPath = Searcher.getExternalPath(CONFIG_FILE);
-            if (externalPath != null && externalPath.toFile().exists()) {
-                Log.debug("Config", "Loading external configuration file: " + externalPath);
-                FileInputStream fis = new FileInputStream(externalPath.toFile());
+            Path configPath = Searcher.pathOf(CONFIG_FILE);
+            if (configPath != null && configPath.toFile().exists()) {
+                Log.debug("Config", "Loading configuration file: " + configPath);
+                FileInputStream fis = new FileInputStream(configPath.toFile());
                 configJson = new JSONObject(new JSONTokener(fis));
                 fis.close();
-            } else {
-                // 加载内部 resources 配置
-                Log.debug("Config", "External configuration file not found. Loading internal configuration.");
-                Path internalPath = Searcher.getInternalPath(CONFIG_FILE);
-                if(internalPath == null) {
-                    Log.debug("Config", "Internal configuration file not found.");
-                } else {
-                    Log.debug("Config", "Loading internal configuration file: " + internalPath);
-                    FileInputStream fis = new FileInputStream(internalPath.toFile());
-                    configJson = new JSONObject(new JSONTokener(fis));
-                    fis.close();
-                }
             }
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load configuration file.", e);
+            Log.error("Config", "Failed to load configuration file: " + CONFIG_FILE, e);
         }
 
         JSONObject clientConfig;
