@@ -81,27 +81,27 @@ public class ServerHandler {
         try {
             filePath = Searcher.getResource(target);
         } catch (IllegalAccessException e) {
-            Log.error("ServerHandler", "Access denied: " + target, e);
+            Log.error("Server", "Access denied: " + target, e);
             return ResponseBuilder.createErrorResponse(request.getVersion(), Status.FORBIDDEN);
         } catch (FileNotFoundException e) {
-            Log.warn("ServerHandler", "Resource not found: " + target);
+            Log.warn("Server", "Resource not found: " + target);
             return ResponseBuilder.createErrorResponse(request.getVersion(), Status.NOT_FOUND);
         }
 
         try {
             // 客户端缓存校验
             if (checkClientCache(request, filePath)) {
-                Log.info("ServerHandler", "Client cache valid, returning 304 Not Modified");
+                Log.info("Server", "Client cache valid, returning 304 Not Modified");
                 return ResponseBuilder.createNotModifiedResponse(request.getVersion());
             }
 
             HttpResponse response = ResponseBuilder.createSuccessResponse(request.getVersion(), filePath);
 
-            Log.info("ServerHandler", "Serving file: " + filePath + " with type: " + response.getHeaderVal(Header.Content_Type));
+            Log.info("Server", "Serving file: " + filePath + " with type: " + response.getHeaderVal(Header.Content_Type));
 
             return response;
         } catch (IOException e) {
-            Log.error("ServerHandler", "Failed to read file: " + filePath, e);
+            Log.error("Server", "Failed to read file: " + filePath, e);
             return ResponseBuilder.createErrorResponse(request.getVersion(), Status.INTERNAL_SERVER_ERROR);
         }
     }

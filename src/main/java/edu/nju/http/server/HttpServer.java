@@ -180,6 +180,7 @@ public class HttpServer {
             }
 
             Log.info("Server", "Response sent to client");
+            Log.debug("Server", "Response: \n" + response);
         } catch (IOException e) {
             Log.error("Server", "Error sending response", e);
             try {
