@@ -69,7 +69,7 @@ public class Config {
 
     // ================== 日志设置 ==================
     public static final String LOG_DIR;
-    public static final int LOG_LEVEL = 2; // 0: none, 1: info, 2: debug
+    public static final int LOG_LEVEL; // 0: none, 1: info, 2: debug
 
     static {
         JSONObject configJson = null;
@@ -104,7 +104,7 @@ public class Config {
         TIMEOUT = serverConfig.optInt("timeout", 5000);
         THREAD_POOL = serverConfig.optBoolean("thread_pool", false);
         int cores = Runtime.getRuntime().availableProcessors();
-        int maxThreads = serverConfig.optInt("max_threads", 4);
+        int maxThreads = serverConfig.optInt("max_threads", 8);
         if(maxThreads <= 0) maxThreads = 4;
         MAX_THREADS = Math.min(maxThreads, cores * 2);
         MAX_CONNECTIONS = serverConfig.optInt("max_connections", 1000);
@@ -122,6 +122,7 @@ public class Config {
         USER_DIR = serverConfig.optString("user_path", "user");
         DATA_DIR = serverConfig.optString("data_dir", "data");
         LOG_DIR = DATA_DIR + "/log";
+        LOG_LEVEL = serverConfig.optInt("log_level", 1);
 
         JSONArray redirects = serverConfig.optJSONArray("redirects");
         if (redirects != null) {

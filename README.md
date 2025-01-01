@@ -1,38 +1,203 @@
+## **项目基本情况**
 
-### 项目结构
+基于 **Java Socket API** 实现的简单 HTTP 客户端与服务器端应用
+
+---
+
+### **1. 基本功能**
+
+#### **服务器端功能**
+
+- 支持处理简单的 **GET** 和 **POST** 请求
+- 支持简单的 **200**，**301**，**302**，**304**，**400**，**401**，**403**，**404**，**409**，**500 **等状态码响应
+- 实现**长连接**
+- 支持**重定向规则**
+
+####  **客户端功能**
+
+- 支持发送 **GET** 和 **POST** 请求
+- 处理 **301**、**302**、**304** 等重定向状态码
+- 支持**长连接**和**缓存控制**
+
+####  **配置管理**
+
+- 支持使用 **JSON文件**进行配置。
+
+
+
+### **2. 框架**
+
+- **编程语言**：Java 1.8
+- **网络通信**：Java Socket API
+- **构建工具**：Maven
+
+| **项目依赖**                               |
+| ------------------------------------------ |
+| **org.projectlombok:lombok**               |
+| **org.json:json**                          |
+| **org.junit.jupiter:junit-jupiter-api**    |
+| **org.junit.jupiter:junit-jupiter-engine** |
+| **maven-compiler-plugin**                  |
+| **maven-assembly-plugin**                  |
+| **maven-surefire-plugin**                  |
+
+
+
+---
+
+
+
+## 构建运行
+
+### 服务端
+
 ```
-├─ config/                             // 配置文件目录
-├─ resources/                          // 资源文件目录
+// 构建
+mvn clean package -Pbuild-server // 输出 target/HTTP-Server-jar-with-dependencies.jar
+// 运行
+java -jar HTTP-Server-jar-with-dependencies.jar
+```
+
+### 客户端
+
+```
+// 构建
+mvn clean package -Pbuild-client // 输出 target/HTTP-Client-jar-with-dependencies.jar
+// 运行
+java -jar HTTP-Client-jar-with-dependencies.jar
+```
+
+
+
+---
+
+
+
+## 项目结构
+
+```
 ├─ src/
 │  └─ main/
-│     └─ java/
-│        └─ edu.nju.http/
-│           ├─ client/                // 客户端
-│           │  ├─ Cache.java
-│           │  ├─ ClientDriver.java
-│           │  ├─ Config.java
-│           │  └─ HttpClient.java
-│           │
-│           ├─ message/               // HTTP 消息
-│           │  ├─ constant/
-│           │  │  ├─ Header.java
-│           │  │  ├─ Method.javagit
-│           │  │  ├─ Status.java
-│           │  │  └─ Version.java
-│           │  ├─ HttpMessage.java
-│           │  ├─ HttpRequest.java
-│           │  ├─ HttpResponse.java
-│           │  └─ MIME.java
-│           │
-│           ├─ server/                // 服务端
-│           │  ├─ Config.java
-│           │  ├─ HttpServer.java
-│           │  ├─ ResponseBuilder.java
-│           │  ├─ ServerHandler.java
-│           │  └─ UserSystem.java
-│           │
-│           └─ utils/                 // 工具类
-│              ├─ Log.java
-│              └─ Searcher.java
-└─ ...
+│     ├─ java/
+│     │   └─ edu.nju.http/
+│     │      ├─ client/                // 客户端
+│     │      │  ├─ Cache.java          // 缓存管理
+│     │      │  ├─ ClientDriver.java   // 客户端交互类
+│     │      │  ├─ Config.java         // 客户端配置类
+│     │      │  └─ HttpClient.java     // HTTP 客户端
+│     │      │
+│     │      ├─ message/               // HTTP 消息
+│     │      │  ├─ constant/
+│     │      │  │  ├─ Header.java      // HTTP 头部字段常量
+│     │      │  │  ├─ Method.java      // HTTP 方法常量
+│     │      │  │  ├─ Status.java      // HTTP 状态码常量
+│     │      │  │  └─ Version.java     // HTTP 版本常量
+│     │      │  ├─ HttpMessage.java    // HTTP 消息基类
+│     │      │  ├─ HttpRequest.java    // HTTP 请求类
+│     │      │  ├─ HttpResponse.java   // HTTP 响应类
+│     │      │  └─ MIME.java           // MIME 类型管理
+│     │      │
+│     │      ├─ server/                // 服务端
+│     │      │  ├─ Config.java         // 服务端配置类
+│     │      │  ├─ HttpServer.java     // HTTP 服务器
+│     │      │  ├─ ResponseBuilder.java// HTTP 响应构建类
+│     │      │  ├─ ServerHandler.java  // HTTP 请求处理类
+│     │      │  └─ UserSystem.java     // 简单的用户系统
+│     │      │
+│     │      └─ utils/                 // 工具类
+│     │         ├─ Log.java            // 日志工具
+│     │         └─ Searcher.java       // 资源搜索工具
+│     │
+│     ├─ resources/                    // 内部资源目录（优先级低于外部资源）
+│         ├─ config/                   // 内部配置文件
+│         │  └─ config.json            // 默认配置文件，当外部配置不存在时使用
+│         │
+│         └─ static/                   // 内部静态资源
+|
+├─ config/                             // 外部配置文件目录，若没有则启动时会在工作目录下生成
+│  └─ config.json 
+│
+├─ resources/                          // 外部资源文件目录，若没有则启动时会在工作目录下生成
+│  └─ static/                          // 外部静态资源
+│
+├─ data/                               // 数据存储目录
+│
+├─ .gitignore                          
+├─ pom.xml                            
+└─ README.md                           
+
+
 ```
+
+
+
+---
+
+
+
+## 配置文件说明
+
+#### 示例
+
+```json
+{
+  "client": {
+    "client_name": "SimpleHttpClient",       // 客户端名称
+    "client_version": "1.0",                 // 客户端版本
+    "keep_alive": true,                      // 是否启用长连接
+    "connection_timeout": 5000,              // 连接超时时间（毫秒）
+    "buffer_size": 2048,                     // 缓冲区大小（字节）
+
+    "enable_cache": true,                    // 是否启用缓存
+    "cache_max_age": 3600,                   // 缓存最大有效时间（秒）
+    "cache_control": "public, max-age=3600", // 缓存控制策略
+
+    "log_level": 1,                          // 日志级别（0: 关闭, 1: 信息, 2: 调试）
+    "log_dir": "logs",                       // 日志目录
+
+    "data_dir": "data"                       // 数据存储目录
+  },
+
+  "server": {
+    "server_name": "SimpleHttpServer",       // 服务器名称
+    "server_version": "1.0",                 // 服务器版本
+    "host": "localhost",                     // 服务器主机地址
+    "port": 8080,                            // 服务器监听端口
+    "keep_alive": true,                      // 是否启用长连接
+    "timeout": 5000,                         // 超时时间（毫秒）
+    "thread_pool": false,                    // 是否启用线程池
+    "max_threads": 8,                        // 最大线程数
+    "max_connections": 1000,                 // 最大连接数
+    "buffer_size": 2048,                     // 缓冲区大小（字节）
+
+    "session_expiry_time": 3600,             // 会话过期时间（秒）
+
+    "enable_cache": true,                    // 是否启用缓存
+    "cache_control": "public,max-age=3600",  // 缓存控制策略
+
+    "default_page": "index.html",            // 默认首页
+    "default_encoding": "UTF-8",             // 默认编码
+
+    "static_resource_dir": "static",         // 静态资源目录
+    "user_path": "user",                     // 用户文件存储路径
+    "data_dir": "data",                      // 数据存储目录
+    "log_dir": "data/log",                   // 日志文件存储目录
+    "log_level": 1,                          // 日志级别（0: 关闭, 1: 信息, 2: 调试）
+
+    "redirects": [                           // URL 重定向规则
+      {
+        "path": "/old-path",
+        "target": "/new-path",
+        "status": 301
+      },
+      {
+        "path": "/",
+        "target": "http://xxx.xxx.xxx.xxx:xxx/xxx", // 不支持域名解析
+        "status": 302
+      }
+    ]
+  }
+}
+
+```
+
