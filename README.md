@@ -68,7 +68,7 @@ java -jar HTTP-Client-jar-with-dependencies.jar
 ```
 
 ```
-send <host>:<port>[/<path>][?<query>] [-m <method>] [-h <header>:<value> ...] [-b "<body>"]
+send [http://]<host>[:<port>][/<path>][?<query>] [-m <method>] [-h <header>:<value> ...] [-b "<body>"]
 disconnect <host>:<port>
 stop
 exit
