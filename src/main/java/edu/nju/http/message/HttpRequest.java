@@ -75,6 +75,14 @@ public class HttpRequest extends HttpMessage {
         version = parts[2];
     }
 
+    public void setQuery(String query) {
+        if(method.equals(Method.GET)){
+            uri = uri.split("\\?")[0] + "?" + query;
+        }else if(method.equals(Method.POST)){
+            setBody(query);
+        }
+    }
+
     public String getQuery() {
         if(method.equals(Method.GET)){
             int index = uri.indexOf('?');

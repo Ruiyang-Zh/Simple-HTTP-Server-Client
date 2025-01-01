@@ -95,25 +95,41 @@ public class ClientDriver {
      */
     private static void send(String[] tokens) {
         if (tokens.length < 2) {
-            System.out.println("Usage: send <host>:<port> [-m <method>] [-h <header>:<value> ...] [-b \"<plain text>\"] [-t <target>]");
+            System.out.println("Usage: send <host>:<port>[/<path>][?<query>] [-m <method>] [-h <header>:<value> ...] [-b \"<plain text>\"]");
             return;
         }
 
-        String[] hostPort = tokens[1].split(":");
-        if (hostPort.length != 2) {
+        String[] hostPathQuery = tokens[1].split(":", 2);
+        if (hostPathQuery.length != 2) {
             System.out.println("Invalid host:port format. Example: localhost:8080");
             return;
         }
-        String host = hostPort[0];
+
+        String host = hostPathQuery[0];
+        String portPathQuery = hostPathQuery[1];
+        String path = "/";
+        String query = "";
         int port;
+
         try {
-            port = Integer.parseInt(hostPort[1]);
+            String[] portParts = portPathQuery.split("/", 2);
+            port = Integer.parseInt(portParts[0]);
+
+            if (portParts.length > 1) {
+                String[] pathQueryParts = portParts[1].split("\\?", 2);
+                path = "/" + pathQueryParts[0];
+                if (pathQueryParts.length > 1) {
+                    query = pathQueryParts[1];
+                }
+            }
         } catch (NumberFormatException e) {
             System.out.println("Invalid port. Please enter a valid number.");
             return;
         }
 
         HttpRequest request = new HttpRequest();
+        request.setTarget(path);
+        request.setQuery(query);
         setCommonHeaders(request);
 
         for (int i = 2; i < tokens.length; i++) {
@@ -122,13 +138,15 @@ public class ClientDriver {
                 case "-m":
                     if (++i < tokens.length) {
                         request.setMethod(tokens[i].toUpperCase());
+                    } else {
+                        System.out.println("Missing value for -m <method>");
                     }
                     break;
                 case "-h":
                     while (++i < tokens.length && !tokens[i].startsWith("-")) {
                         String[] headerParts = tokens[i].split(":", 2);
                         if (headerParts.length == 2) {
-                            request.setHeader(headerParts[0], headerParts[1]);
+                            request.setHeader(headerParts[0].trim(), headerParts[1].trim());
                         } else {
                             System.out.println("Invalid header format: " + tokens[i] + ". Expected key:value");
                         }
@@ -142,15 +160,13 @@ public class ClientDriver {
                             bodyToken = bodyToken.substring(1, bodyToken.length() - 1);
                         }
                         request.setBody(bodyToken);
-                    }
-                    break;
-                case "-t":
-                    if (++i < tokens.length) {
-                        request.setTarget(tokens[i]);
+                    } else {
+                        System.out.println("Missing value for -b <plain text>");
                     }
                     break;
                 default:
                     System.out.println("Unknown option: " + tokens[i]);
+                    break;
             }
         }
 
@@ -214,7 +230,7 @@ public class ClientDriver {
     }
 
     private static void help() {
-        System.out.println("1. send <host>:<port> [-m <method>] [-h <header>:<value> ...] [-b \"<body>\"] [-t <target>]");
+        System.out.println("1. send <host>:<port>[/<path>][?<query>] [-m <method>] [-h <header>:<value> ...] [-b \"<body>\"]");
         System.out.println("2. disconnect <host>:<port>");
         System.out.println("3. stop");
         System.out.println("4. exit");

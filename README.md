@@ -9,7 +9,7 @@
 #### **服务器端功能**
 
 - 支持处理简单的 **GET** 和 **POST** 请求
-- 支持简单的 **200**，**301**，**302**，**304**，**400**，**401**，**403**，**404**，**409**，**500 **等状态码响应
+- 支持简单的 **200**，**301**，**302**，**304**，**400**，**401**，**403**，**404**，**409**，**500**等状态码响应
 - 实现**长连接**
 - 支持**重定向规则**
 
@@ -65,6 +65,14 @@ java -jar HTTP-Server-jar-with-dependencies.jar
 mvn clean package -Pbuild-client // 输出 target/HTTP-Client-jar-with-dependencies.jar
 // 运行
 java -jar HTTP-Client-jar-with-dependencies.jar
+```
+
+```
+send <host>:<port>[/<path>][?<query>] [-m <method>] [-h <header>:<value> ...] [-b "<body>"]
+disconnect <host>:<port>
+stop
+exit
+help
 ```
 
 
@@ -142,49 +150,40 @@ java -jar HTTP-Client-jar-with-dependencies.jar
 ```json
 {
   "client": {
-    "client_name": "SimpleHttpClient",       // 客户端名称
-    "client_version": "1.0",                 // 客户端版本
-    "keep_alive": true,                      // 是否启用长连接
-    "connection_timeout": 5000,              // 连接超时时间（毫秒）
-    "buffer_size": 2048,                     // 缓冲区大小（字节）
-
-    "enable_cache": true,                    // 是否启用缓存
-    "cache_max_age": 3600,                   // 缓存最大有效时间（秒）
-    "cache_control": "public, max-age=3600", // 缓存控制策略
-
-    "log_level": 1,                          // 日志级别（0: 关闭, 1: 信息, 2: 调试）
-    "log_dir": "logs",                       // 日志目录
-
-    "data_dir": "data"                       // 数据存储目录
+    "client_name": "SimpleHttpClient",
+    "client_version": "1.0",
+    "keep_alive": true,
+    "connection_timeout": 5000,
+    "buffer_size": 2048,
+    "enable_cache": true,
+    "cache_max_age": 3600,
+    "cache_control": "public, max-age=3600",
+    "log_level": 1,
+    "log_dir": "logs",
+    "data_dir": "data"
   },
-
   "server": {
-    "server_name": "SimpleHttpServer",       // 服务器名称
-    "server_version": "1.0",                 // 服务器版本
-    "host": "localhost",                     // 服务器主机地址
-    "port": 8080,                            // 服务器监听端口
-    "keep_alive": true,                      // 是否启用长连接
-    "timeout": 5000,                         // 超时时间（毫秒）
-    "thread_pool": false,                    // 是否启用线程池
-    "max_threads": 8,                        // 最大线程数
-    "max_connections": 1000,                 // 最大连接数
-    "buffer_size": 2048,                     // 缓冲区大小（字节）
-
-    "session_expiry_time": 3600,             // 会话过期时间（秒）
-
-    "enable_cache": true,                    // 是否启用缓存
-    "cache_control": "public,max-age=3600",  // 缓存控制策略
-
-    "default_page": "index.html",            // 默认首页
-    "default_encoding": "UTF-8",             // 默认编码
-
-    "static_resource_dir": "static",         // 静态资源目录
-    "user_path": "user",                     // 用户文件存储路径
-    "data_dir": "data",                      // 数据存储目录
-    "log_dir": "data/log",                   // 日志文件存储目录
-    "log_level": 1,                          // 日志级别（0: 关闭, 1: 信息, 2: 调试）
-
-    "redirects": [                           // URL 重定向规则
+    "server_name": "SimpleHttpServer",
+    "server_version": "1.0",
+    "host": "localhost",
+    "port": 8080,
+    "keep_alive": true,
+    "timeout": 5000,
+    "thread_pool": false,
+    "max_threads": 8,
+    "max_connections": 1000,
+    "buffer_size": 2048,
+    "session_expiry_time": 3600,
+    "enable_cache": true,
+    "cache_control": "public,max-age=3600",
+    "default_page": "index.html",
+    "default_encoding": "UTF-8",
+    "static_resource_dir": "static",
+    "user_path": "user",
+    "data_dir": "data",
+    "log_dir": "data/log",
+    "log_level": 1,
+    "redirects": [
       {
         "path": "/old-path",
         "target": "/new-path",
@@ -192,7 +191,7 @@ java -jar HTTP-Client-jar-with-dependencies.jar
       },
       {
         "path": "/",
-        "target": "http://xxx.xxx.xxx.xxx:xxx/xxx", // 不支持域名解析
+        "target": "http://xxx.xxx.xxx.xxx:xxx/xxx",
         "status": 302
       }
     ]
@@ -201,3 +200,57 @@ java -jar HTTP-Client-jar-with-dependencies.jar
 
 ```
 
+
+
+#### client
+
+| **字段**             | **类型** | **含义**                              | **默认值**          |
+| -------------------- | -------- | ------------------------------------- | ------------------- |
+| `client_name`        | String   | 客户端名称                            | SimpleHttpClient    |
+| `client_version`     | String   | 客户端版本                            | 1.0                 |
+| `keep_alive`         | Boolean  | 是否启用长连接                        | true                |
+| `connection_timeout` | Integer  | 连接超时时间（毫秒）                  | 5000                |
+| `buffer_size`        | Integer  | 缓冲区大小（字节）                    | 2048                |
+| `enable_cache`       | Boolean  | 是否启用缓存                          | true                |
+| `cache_max_age`      | Integer  | 缓存最大有效时间（秒）                | 3600                |
+| `cache_control`      | String   | 缓存控制策略                          | public,max-age=3600 |
+| `log_level`          | Integer  | 日志级别（0: 关闭, 1: 信息, 2: 调试） | 1                   |
+| `log_dir`            | String   | 日志存储目录                          | logs                |
+| `data_dir`           | String   | 数据存储目录                          | data                |
+
+
+
+#### server
+
+| **字段**              | **类型** | **含义**                              | **默认值**          |
+| --------------------- | -------- | ------------------------------------- | ------------------- |
+| `server_name`         | String   | 服务器名称                            | SimpleHttpServer    |
+| `server_version`      | String   | 服务器版本                            | 1.0                 |
+| `host`                | String   | 服务器主机地址                        | localhost           |
+| `port`                | Integer  | 服务器监听端口                        | 8080                |
+| `keep_alive`          | Boolean  | 是否启用长连接                        | true                |
+| `timeout`             | Integer  | 超时时间（毫秒）                      | 5000                |
+| `thread_pool`         | Boolean  | 是否启用线程池                        | false               |
+| `max_threads`         | Integer  | 最大线程数                            | 8                   |
+| `max_connections`     | Integer  | 最大连接数                            | 1000                |
+| `buffer_size`         | Integer  | 缓冲区大小（字节）                    | 2048                |
+| `session_expiry_time` | Integer  | 会话过期时间（秒）                    | 3600                |
+| `enable_cache`        | Boolean  | 是否启用缓存                          | true                |
+| `cache_control`       | String   | 缓存控制策略                          | public,max-age=3600 |
+| `default_page`        | String   | 默认首页文件名                        | index.html          |
+| `default_encoding`    | String   | 默认编码                              | UTF-8               |
+| `static_resource_dir` | String   | 静态资源目录                          | static              |
+| `user_path`           | String   | 用户文件存储路径                      | user                |
+| `data_dir`            | String   | 数据存储目录                          | data                |
+| `log_dir`             | String   | 日志文件存储目录                      | data/log            |
+| `log_level`           | Integer  | 日志级别（0: 关闭, 1: 信息, 2: 调试） | 1                   |
+
+
+
+#### redirects
+
+| **字段** | **类型** | **含义**         | 示例                     |
+| -------- | -------- | ---------------- | ------------------------ |
+| `path`   | String   | 需要重定向的路径 | `/old-path`              |
+| `target` | String   | 重定向的目标路径 | `/new-path` (不支持域名) |
+| `status` | Integer  | HTTP 状态码      | 301                      |
