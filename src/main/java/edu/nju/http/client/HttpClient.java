@@ -9,6 +9,7 @@ import lombok.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -19,6 +20,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * HttpClient
@@ -26,7 +28,6 @@ import java.util.Map;
 public class HttpClient {
     private final Map<String, Connection> connectionMap = new HashMap<>();
     private final Cache cache = new Cache();
-    private static final int MAX_REDIRECTS = 5;
 
     /**
      * 发送 HTTP 请求
@@ -234,31 +235,18 @@ public class HttpClient {
 
         Log.info("HttpClient", "Redirecting to: " + location);
 
-        String host, target;
-        int port;
-
-        try {
-            if (location.startsWith("http://") || location.startsWith("https://")) {
-                URI uri = new URI(location);
-                host = uri.getHost();
-                port = uri.getPort() != -1 ? uri.getPort() : 80;
-                target = uri.getPath() != null ? uri.getPath() : "/";
-                if (uri.getQuery() != null) {
-                    target += "?" + uri.getQuery();
-                }
-            } else {
-                String[] parts = request.getHeaderVal(Header.Host).split(":");
-                host = parts[0];
-                port = parts.length > 1 ? Integer.parseInt(parts[1]) : 80;
-                target = location.startsWith("/") ? location : "/" + location;
+        if (location.contains("://")) {
+            if(!location.startsWith("http")) {
+                Log.error("HttpClient", "Unsupported protocol: " + location);
+                return null;
             }
-        } catch (URISyntaxException e) {
-            Log.error("HttpClient", "Invalid redirect URI: " + location, e);
-            return null;
         }
 
-        request.setHeader(Header.Host, host + ":" + port);
-        request.setTarget(target);
+        request.setTarget(location);
+
+        String[] hostPort = request.getHeaderVal(Header.Host).split(":");
+        String host = hostPort[0];
+        int port = hostPort.length == 2 ? Integer.parseInt(hostPort[1]) : 80;
 
         return send(host, port, request);
     }
@@ -271,8 +259,11 @@ public class HttpClient {
     /**
      * 连接管理
      */
-    private class Connection {
+    private static class Connection {
+        private static final Pattern IPV4_PATTERN = Pattern.compile("^(\\d{1,3}\\.){3}\\d{1,3}$");
+
         private final String host;
+        private final String resolvedHost;
         private final int port;
         private SocketChannel channel;
         @Getter @Setter
@@ -281,13 +272,14 @@ public class HttpClient {
         public Connection(String host, int port) {
             this.host = host;
             this.port = port;
+            this.resolvedHost = resolveHost(host);
         }
 
         public void connect() {
             try {
                 channel = SocketChannel.open();
                 channel.configureBlocking(true);
-                channel.connect(new InetSocketAddress(host, port));
+                channel.connect(new InetSocketAddress(resolvedHost, port));
                 Log.info("Connection", "Connected to " + host + ":" + port);
             } catch (IOException e) {
                 Log.error("Connection", "Failed to connect to " + host + ":" + port, e);
@@ -307,6 +299,25 @@ public class HttpClient {
 
         public boolean isConnected() {
             return channel != null && channel.isOpen();
+        }
+
+        private String resolveHost(String host) {
+            if (isIPAddress(host)) {
+                Log.debug("Connection", "Using provided IP address directly: " + host);
+                return host;
+            }
+            try {
+                InetAddress address = InetAddress.getByName(host);
+                Log.debug("Connection", "Resolved host " + host + " to IP " + address.getHostAddress());
+                return address.getHostAddress();
+            } catch (IOException e) {
+                Log.error("Connection", "Failed to resolve host: " + host, e);
+                throw new IllegalArgumentException("Invalid host: " + host);
+            }
+        }
+
+        private boolean isIPAddress(String host) {
+            return IPV4_PATTERN.matcher(host).matches();
         }
 
     }

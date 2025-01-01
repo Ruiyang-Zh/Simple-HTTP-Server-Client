@@ -36,6 +36,9 @@ public class Config {
     private static final String CONFIG_FILE = "config/config.json";
     public static final String DATA_DIR;
 
+    // ================== 其他设置 ==================
+    public static final int MAX_DISPLAY_SIZE;
+
     static {
         JSONObject configJson = null;
         try {
@@ -75,5 +78,7 @@ public class Config {
         LOG_DIR = clientConfig.optString("log_dir", "logs");
 
         DATA_DIR = clientConfig.optString("data_dir", "data");
+
+        MAX_DISPLAY_SIZE = clientConfig.optInt("max_display_size", 1024);
     }
 }

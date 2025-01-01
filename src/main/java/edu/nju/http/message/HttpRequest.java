@@ -3,6 +3,8 @@ package edu.nju.http.message;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -76,6 +78,9 @@ public class HttpRequest extends HttpMessage {
     }
 
     public void setQuery(String query) {
+        if(query == null || query.isEmpty()){
+            return;
+        }
         if(method.equals(Method.GET)){
             uri = uri.split("\\?")[0] + "?" + query;
         }else if(method.equals(Method.POST)){
@@ -96,8 +101,27 @@ public class HttpRequest extends HttpMessage {
         return "";
     }
 
-    public void setTarget(String path) {
-        uri = path + (uri.contains("?") ? uri.substring(uri.indexOf("?")) : "");
+    public void setTarget(String target) {
+        if(target == null || target.isEmpty()){
+            this.uri = "/";
+        }
+        try {
+            if (target.startsWith("http://")) {
+                URI uriObj = new URI(target);
+                String path = uriObj.getPath();
+                if (path == null || path.isEmpty()) {
+                    path = "/";
+                }
+                this.uri = path + (uriObj.getQuery() != null ? "?" + uriObj.getQuery() : "");
+                int port = uriObj.getPort();
+                setHeader(Header.Host, uriObj.getHost() + ((port != -1 && port != 80) ? ":" + port : ""));
+            } else {
+                target = target.startsWith("/") ? target : "/" + target;
+                this.uri = target + (this.uri != null && this.uri.contains("?") ? this.uri.substring(this.uri.indexOf("?")) : "");
+            }
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Invalid URI: " + target, e);
+        }
     }
 
     public String getTarget() {
@@ -107,5 +131,4 @@ public class HttpRequest extends HttpMessage {
         }
         return uri.substring(0, index);
     }
-
 }

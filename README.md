@@ -160,7 +160,8 @@ help
     "cache_control": "public, max-age=3600",
     "log_level": 1,
     "log_dir": "logs",
-    "data_dir": "data"
+    "data_dir": "data",
+    "max_display_size": 1024
   },
   "server": {
     "server_name": "SimpleHttpServer",
@@ -193,6 +194,11 @@ help
         "path": "/",
         "target": "http://xxx.xxx.xxx.xxx:xxx/xxx",
         "status": 302
+      },
+      {
+         "path": "/google",
+         "target": "http://www.google.com",
+         "status": 302
       }
     ]
   }
@@ -217,6 +223,7 @@ help
 | `log_level`          | Integer  | 日志级别（0: 关闭, 1: 信息, 2: 调试） | 1                   |
 | `log_dir`            | String   | 日志存储目录                          | logs                |
 | `data_dir`           | String   | 数据存储目录                          | data                |
+| `max_display_size`   | Integer  | 命令行界面消息体展示限制              | 1024                |
 
 
 
@@ -249,8 +256,8 @@ help
 
 #### redirects
 
-| **字段** | **类型** | **含义**         | 示例                     |
-| -------- | -------- | ---------------- | ------------------------ |
-| `path`   | String   | 需要重定向的路径 | `/old-path`              |
-| `target` | String   | 重定向的目标路径 | `/new-path` (不支持域名) |
-| `status` | Integer  | HTTP 状态码      | 301                      |
+| **字段** | **类型** | **含义**         | 示例        |
+| -------- | -------- | ---------------- | ----------- |
+| `path`   | String   | 需要重定向的路径 | `/old-path` |
+| `target` | String   | 重定向的目标路径 | `/new-path` |
+| `status` | Integer  | HTTP 状态码      | 301         |

@@ -95,42 +95,26 @@ public class ClientDriver {
      */
     private static void send(String[] tokens) {
         if (tokens.length < 2) {
-            System.out.println("Usage: send <host>:<port>[/<path>][?<query>] [-m <method>] [-h <header>:<value> ...] [-b \"<plain text>\"]");
+            System.out.println("Usage: send <host>[:<port>][/<path>][?<query>] [-m <method>] [-h <header>:<value> ...] [-b \"<plain text>\"]");
             return;
         }
 
-        String[] hostPathQuery = tokens[1].split(":", 2);
-        if (hostPathQuery.length != 2) {
-            System.out.println("Invalid host:port format. Example: localhost:8080");
-            return;
-        }
-
-        String host = hostPathQuery[0];
-        String portPathQuery = hostPathQuery[1];
-        String path = "/";
-        String query = "";
-        int port;
-
-        try {
-            String[] portParts = portPathQuery.split("/", 2);
-            port = Integer.parseInt(portParts[0]);
-
-            if (portParts.length > 1) {
-                String[] pathQueryParts = portParts[1].split("\\?", 2);
-                path = "/" + pathQueryParts[0];
-                if (pathQueryParts.length > 1) {
-                    query = pathQueryParts[1];
-                }
+        if(tokens[1].contains("://")){
+            if(!tokens[1].startsWith("http://")){
+                System.out.println("Unsupported protocol. Please use HTTP.");
+                return;
             }
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid port. Please enter a valid number.");
-            return;
+        } else {
+            tokens[1] = "http://" + tokens[1];
         }
 
         HttpRequest request = new HttpRequest();
-        request.setTarget(path);
-        request.setQuery(query);
+        request.setTarget(tokens[1]);
         setCommonHeaders(request);
+
+        String[] hostPort = request.getHeaderVal(Header.Host).split(":");
+        String host = hostPort[0];
+        int port = hostPort.length == 2 ? Integer.parseInt(hostPort[1]) : 80;
 
         for (int i = 2; i < tokens.length; i++) {
             String opt = tokens[i];
@@ -181,15 +165,16 @@ public class ClientDriver {
                 System.out.println(response.getStartLine());
                 System.out.println(response.getFormattedHeaders());
 
-                String contentType = response.getHeaderVal("Content-Type");
-                if (MIME.isTextType(contentType == null ? "" : contentType.split(";")[0])) {
+                String contentType = response.getHeaderVal("Content-Type").split(";")[0];
+                if (MIME.isTextType(contentType == null ? "" : contentType)
+                        && Integer.parseInt(response.getHeaderVal("Content-Length")) < Config.MAX_DISPLAY_SIZE) {
                     System.out.println("[Body]:\n" + response.getBodyAsString());
                 } else {
                     String target = request.getTarget();
-                    if (target == null || target.isEmpty()) {
-                        target = "response.bin";
+                    if (target == null || target.isEmpty() || target.equals("/")) {
+                        target = "response";
                     }
-                    saveBinaryData(contentType, response.getBody(), target);
+                    saveData(contentType, response.getBody(), target);
                 }
             } else {
                 System.out.println("Failed to receive a valid response.");
@@ -230,7 +215,7 @@ public class ClientDriver {
     }
 
     private static void help() {
-        System.out.println("1. send <host>:<port>[/<path>][?<query>] [-m <method>] [-h <header>:<value> ...] [-b \"<body>\"]");
+        System.out.println("1. send <host>[:<port>][/<path>][?<query>] [-m <method>] [-h <header>:<value> ...] [-b \"<body>\"]");
         System.out.println("2. disconnect <host>:<port>");
         System.out.println("3. stop");
         System.out.println("4. exit");
@@ -255,7 +240,7 @@ public class ClientDriver {
     /**
      * 将二进制数据存储到 Config.DATA_DIR 下
      */
-    private static void saveBinaryData(String type, byte[] data, String path) {
+    private static void saveData(String type, byte[] data, String path) {
         if (data == null || data.length == 0) {
             System.out.println("No binary data to save.");
             return;
