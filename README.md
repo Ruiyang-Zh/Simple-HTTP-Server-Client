@@ -210,20 +210,20 @@ help
 
 #### client
 
-| **字段**             | **类型** | **含义**                              | **默认值**          |
-| -------------------- | -------- | ------------------------------------- | ------------------- |
-| `client_name`        | String   | 客户端名称                            | SimpleHttpClient    |
-| `client_version`     | String   | 客户端版本                            | 1.0                 |
-| `keep_alive`         | Boolean  | 是否启用长连接                        | true                |
-| `connection_timeout` | Integer  | 连接超时时间（毫秒）                  | 5000                |
-| `buffer_size`        | Integer  | 缓冲区大小（字节）                    | 2048                |
-| `enable_cache`       | Boolean  | 是否启用缓存                          | true                |
-| `cache_max_age`      | Integer  | 缓存最大有效时间（秒）                | 3600                |
-| `cache_control`      | String   | 缓存控制策略                          | public,max-age=3600 |
-| `log_level`          | Integer  | 日志级别（0: 关闭, 1: 信息, 2: 调试） | 1                   |
-| `log_dir`            | String   | 日志存储目录                          | logs                |
-| `data_dir`           | String   | 数据存储目录                          | data                |
-| `max_display_size`   | Integer  | 命令行界面消息体展示限制              | 1024                |
+| **字段**             | **类型** | **含义**                              | **默认值**       |
+| -------------------- | -------- | ------------------------------------- | ---------------- |
+| `client_name`        | String   | 客户端名称                            | SimpleHttpClient |
+| `client_version`     | String   | 客户端版本                            | 1.0              |
+| `keep_alive`         | Boolean  | 是否启用长连接                        | true             |
+| `connection_timeout` | Integer  | 连接超时时间（毫秒）                  | 5000             |
+| `buffer_size`        | Integer  | 缓冲区大小（字节）                    | 2048             |
+| `enable_cache`       | Boolean  | 是否启用缓存                          | true             |
+| `cache_max_age`      | Integer  | 默认缓存最大有效时间（秒）            | 3600             |
+| `cache_control`      | String   | 默认缓存控制策略                      | max-age=3600     |
+| `log_level`          | Integer  | 日志级别（0: 关闭, 1: 信息, 2: 调试） | 1                |
+| `log_dir`            | String   | 日志存储目录（目前没有实现日志存储）  | logs             |
+| `data_dir`           | String   | 数据存储目录                          | data             |
+| `max_display_size`   | Integer  | 命令行界面消息体展示限制              | 1024             |
 
 
 
@@ -249,7 +249,7 @@ help
 | `static_resource_dir` | String   | 静态资源目录                          | static              |
 | `user_path`           | String   | 用户文件存储路径                      | user                |
 | `data_dir`            | String   | 数据存储目录                          | data                |
-| `log_dir`             | String   | 日志文件存储目录                      | data/log            |
+| `log_dir`             | String   | 日志存储目录（目前没有实现日志存储）  | data/log            |
 | `log_level`           | Integer  | 日志级别（0: 关闭, 1: 信息, 2: 调试） | 1                   |
 
 

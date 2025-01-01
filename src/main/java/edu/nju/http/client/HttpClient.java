@@ -68,7 +68,12 @@ public class HttpClient {
         }
 
         // 缓存
-        if (Config.ENABLE_CACHE && Method.GET.equals(request.getMethod()) && response != null && response.getStatusCode() == 200) {
+        if (Config.ENABLE_CACHE
+                && Method.GET.equals(request.getMethod())
+                && response != null
+                && response.getStatusCode() == 200
+                && response.getHeaderVal(Header.Cache_Control) != null
+                && !response.getHeaderVal(Header.Cache_Control).contains("no-store")) {
             cache.put(request, response);
         }
 

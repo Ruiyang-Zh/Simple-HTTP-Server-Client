@@ -72,7 +72,7 @@ public class Config {
 
         ENABLE_CACHE = clientConfig.optBoolean("enable_cache", true);
         CACHE_MAX_AGE = clientConfig.optInt("cache_max_age", 3600);
-        CACHE_CONTROL = clientConfig.optString("cache_control", "public, max-age=3600");
+        CACHE_CONTROL = clientConfig.optString("cache_control", "max-age=3600");
 
         LOG_LEVEL = clientConfig.optInt("log_level", 1);
         LOG_DIR = clientConfig.optString("log_dir", "logs");
