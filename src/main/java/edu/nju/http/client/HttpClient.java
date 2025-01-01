@@ -45,6 +45,7 @@ public class HttpClient {
                 HttpResponse cachedResponse = cache.get(request);
                 // 更新 Date
                 cachedResponse.setHeader(Header.Date, ZonedDateTime.now().format(DateTimeFormatter.RFC_1123_DATE_TIME));
+                return cachedResponse;
             } else {
                 Log.info("HttpClient", "Cache expired: " + request.getStartLine());
                 HttpResponse cachedResponse = cache.get(request);
