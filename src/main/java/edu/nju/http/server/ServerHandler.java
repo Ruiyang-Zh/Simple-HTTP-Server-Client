@@ -12,6 +12,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * ServerHandler - 处理 HTTP 请求
@@ -146,8 +149,9 @@ public class ServerHandler {
             }
 
             if (ifModifiedSince != null) {
-                long ifModifiedSinceTime = Long.parseLong(ifModifiedSince);
-                if (lastModifiedTime.toMillis() <= ifModifiedSinceTime) {
+                ZonedDateTime clientTime = ZonedDateTime.parse(ifModifiedSince, DateTimeFormatter.RFC_1123_DATE_TIME);
+                ZonedDateTime serverTime = lastModifiedTime.toInstant().atZone(ZoneOffset.UTC);
+                if (clientTime.isAfter(serverTime)) {
                     Log.debug("ServerHandler", "If-Modified-Since matches, cache valid");
                     return true;
                 }

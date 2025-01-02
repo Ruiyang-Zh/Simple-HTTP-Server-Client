@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -89,7 +90,7 @@ public class ResponseBuilder {
             String eTag = String.valueOf(lastModifiedTime.toMillis());
 
             response.setHeader(Header.ETag, eTag);
-            response.setHeader(Header.Last_Modified, lastModifiedTime.toString());
+            response.setHeader(Header.Last_Modified, lastModifiedTime.toInstant().atZone(ZoneOffset.UTC).format(DateTimeFormatter.RFC_1123_DATE_TIME));
             Log.debug("ServerHandler", "Set resource headers: ETag=" + eTag);
         } catch (IOException e) {
             Log.error("ServerHandler", "Failed to set resource headers", e);
