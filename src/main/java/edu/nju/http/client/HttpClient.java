@@ -47,9 +47,9 @@ public class HttpClient {
         Connection connection = connectionMap.remove(connectionKey);
         if (connection != null) {
             connection.close();
-            Log.info("HttpClient", "Connection closed: " + connectionKey);
+            Log.info("Client", "Connection closed: " + connectionKey);
         } else {
-            Log.info("HttpClient", "No connection to close: " + connectionKey);
+            Log.info("Client", "No connection to close: " + connectionKey);
         }
     }
 
@@ -58,7 +58,7 @@ public class HttpClient {
      * 该方法将关闭所有已建立的连接，释放资源，并清空连接映射表。
      */
     public void stop() {
-        Log.info("HttpClient", "Closing all connections...");
+        Log.info("Client", "Closing all connections...");
 
         for (Map.Entry<String, Connection> entry : connectionMap.entrySet()) {
             String connectionKey = entry.getKey();
@@ -66,12 +66,12 @@ public class HttpClient {
 
             if (connection != null && connection.isConnected()) {
                 connection.close();
-                Log.info("HttpClient", "Connection closed: " + connectionKey);
+                Log.info("Client", "Connection closed: " + connectionKey);
             }
         }
 
         connectionMap.clear();
-        Log.info("HttpClient", "All connections have been closed. Client stopped.");
+        Log.info("Client", "All connections have been closed. Client stopped.");
     }
 
 
@@ -88,13 +88,13 @@ public class HttpClient {
         // 检查缓存
         if (Method.GET.equals(request.getMethod()) && cache.contains(request)) {
             if (cache.isValid(request)) {
-                Log.info("HttpClient", "Cache hit: " + request.getStartLine());
+                Log.info("Client", "Cache hit: " + request.getStartLine());
                 HttpResponse cachedResponse = cache.get(request);
                 // 更新 Date
                 cachedResponse.setHeader(Header.Date, ZonedDateTime.now().format(DateTimeFormatter.RFC_1123_DATE_TIME));
                 return cachedResponse;
             } else {
-                Log.info("HttpClient", "Cache expired: " + request.getStartLine());
+                Log.info("Client", "Cache expired: " + request.getStartLine());
                 HttpResponse cachedResponse = cache.get(request);
                 request.setHeader(Header.If_None_Match, cachedResponse.getHeaderVal(Header.ETag));
                 request.setHeader(Header.If_Modified_Since, cachedResponse.getHeaderVal(Header.Last_Modified));
@@ -105,7 +105,7 @@ public class HttpClient {
 
         // 304 直接返回缓存内容
         if (response != null && response.getStatusCode() == 304) {
-            Log.info("HttpClient", "Resource not modified, using cached version.");
+            Log.info("Client", "Resource not modified, using cached version.");
             cache.update(request);
             return cache.get(request);
         }
@@ -113,7 +113,7 @@ public class HttpClient {
         // 重定向
         if (response != null && isRedirect(response)) {
             if(redirectCount >= Config.MAX_REDIRECTS) {
-                Log.warn("HttpClient", "Too many redirects.");
+                Log.warn("Client", "Too many redirects.");
                 return null;
             }
             return redirect(response, request, redirectCount);
@@ -144,15 +144,15 @@ public class HttpClient {
 
         String location = response.getHeaderVal(Header.Location);
         if (location == null) {
-            Log.warn("HttpClient", "Redirect location not specified.");
+            Log.warn("Client", "Redirect location not specified.");
             return null;
         }
 
-        Log.info("HttpClient", "Redirecting to: " + location);
+        Log.info("Client", "Redirecting to: " + location);
 
         if (location.contains("://")) {
             if(!location.startsWith("http")) {
-                Log.error("HttpClient", "Unsupported protocol: " + location);
+                Log.error("Client", "Unsupported protocol: " + location);
                 return null;
             }
         }
@@ -202,11 +202,23 @@ public class HttpClient {
             boolean headerParsed = false;
             int contentLength = -1;
             int headerEndIndex = -1;
+            long timeout = System.currentTimeMillis() + Config.CONNECTION_TIMEOUT;
 
             try {
                 while (true) {
+                    if (System.currentTimeMillis() > timeout) {
+                        Log.error("Client", "Response timeout while waiting for data.");
+                        disconnect(host, port);
+                        return null;
+                    }
                     int bytesRead = connection.channel.read(responseBuffer);
-                    if (bytesRead == -1) break;
+                    if (bytesRead == -1) {
+                        Log.warn("Client", "Connection closed by server.");
+                        break;
+                    } else if (bytesRead == 0) {
+                        Thread.sleep(10);
+                        continue;
+                    }
 
                     responseBuffer.flip();
                     byte[] data = new byte[responseBuffer.remaining()];
@@ -246,16 +258,21 @@ public class HttpClient {
                     }
                 }
             } catch (IOException e) {
-                Log.error("HttpClient", "Request/Response failed", e);
+                Log.error("Client", "Request/Response failed");
                 disconnect(host, port);
-            }
-
-            if(response == null) {
-                Log.error("HttpClient", "Unexpected error occurred while parsing response.");
+            } catch (InterruptedException e) {
+                Log.error("Client", "Thread interrupted during sleep", e);
+                Thread.currentThread().interrupt();
+                disconnect(host, port);
                 return null;
             }
 
-            Log.info("HttpClient", "Response received: " + response.getStartLine());
+            if(response == null) {
+                Log.error("Client", "Unexpected error occurred while parsing response.");
+                return null;
+            }
+
+            Log.info("Client", "Response received: " + response.getStartLine());
 
             // 处理 Cookie
             String setCookie = response.getHeaderVal(Header.Set_Cookie);
@@ -272,7 +289,7 @@ public class HttpClient {
             return response;
 
         } catch (IOException e) {
-            Log.error("HttpClient", "Request/Response failed", e);
+            Log.error("Client", "Request/Response failed");
             disconnect(host, port);
             return null;
         }
@@ -300,11 +317,24 @@ public class HttpClient {
         public void connect() {
             try {
                 channel = SocketChannel.open();
-                channel.configureBlocking(true);
+                channel.configureBlocking(false);
                 channel.connect(new InetSocketAddress(resolvedHost, port));
+                long timeout = System.currentTimeMillis() + Config.CONNECTION_TIMEOUT;
+
+                while (!channel.finishConnect()) {
+                    if (System.currentTimeMillis() > timeout) {
+                        Log.error("Connection", "Connection timeout while connecting to " + host + ":" + port);
+                        close();
+                        return;
+                    }
+                    Thread.sleep(50);
+                }
                 Log.info("Connection", "Connected to " + host + ":" + port);
             } catch (IOException e) {
-                Log.error("Connection", "Failed to connect to " + host + ":" + port, e);
+                Log.error("Connection", "Failed to connect to " + host + ":" + port);
+            } catch (InterruptedException e) {
+                Log.error("Connection", "Thread interrupted while connecting to " + host + ":" + port, e);
+                Thread.currentThread().interrupt();
             }
         }
 
@@ -333,7 +363,7 @@ public class HttpClient {
                 Log.debug("Connection", "Resolved host " + host + " to IP " + address.getHostAddress());
                 return address.getHostAddress();
             } catch (IOException e) {
-                Log.error("Connection", "Failed to resolve host: " + host, e);
+                Log.error("Connection", "Failed to resolve host: " + host);
                 throw new IllegalArgumentException("Invalid host: " + host);
             }
         }

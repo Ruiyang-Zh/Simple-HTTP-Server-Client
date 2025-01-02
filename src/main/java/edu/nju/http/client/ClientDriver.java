@@ -180,7 +180,7 @@ public class ClientDriver {
                 System.out.println("Failed to receive a valid response.");
             }
         } catch (Exception e) {
-            Log.error("ClientCLI", "Failed to send HTTP request.", e);
+            Log.error("Client", "Failed to send HTTP request.", e);
         }
     }
 
@@ -245,16 +245,14 @@ public class ClientDriver {
             System.out.println("No binary data to save.");
             return;
         }
+
         String[] pathParts = path.split("/");
         String fileName = pathParts[pathParts.length - 1];
-        if(!fileName.matches(".*\\.[a-zA-Z0-9]+$")){
+        if (!fileName.matches(".*\\.[a-zA-Z0-9]+$")) {
             fileName = fileName + "." + MIME.toExtension(type);
         }
-        File outFile = new File(Config.DATA_DIR, fileName);
 
-        if (!outFile.getParentFile().exists()) {
-            outFile.getParentFile().mkdirs();
-        }
+        File outFile = getFile(fileName);
 
         try (FileOutputStream fos = new FileOutputStream(outFile)) {
             fos.write(data);
@@ -264,4 +262,22 @@ public class ClientDriver {
             System.out.println("Failed to save binary data: " + e.getMessage());
         }
     }
+
+    private static File getFile(String fileName) {
+        File outFile = new File(Config.DATA_DIR, fileName);
+        String baseName = fileName.contains(".") ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName;
+        String extension = fileName.contains(".") ? fileName.substring(fileName.lastIndexOf('.')) : "";
+
+        int counter = 1;
+        while (outFile.exists()) {
+            outFile = new File(Config.DATA_DIR, baseName + "(" + counter + ")" + extension);
+            counter++;
+        }
+
+        if (!outFile.getParentFile().exists()) {
+            outFile.getParentFile().mkdirs();
+        }
+        return outFile;
+    }
+
 }
