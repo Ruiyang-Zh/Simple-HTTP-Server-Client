@@ -174,7 +174,9 @@ public class ClientDriver {
                     if (target == null || target.isEmpty() || target.equals("/")) {
                         target = "response";
                     }
-                    saveData(contentType, response.getBody(), target);
+                    String fileName = target.replace("/", "_").replace(":", "_").replace("?", "_");
+                    String tag = response.getHeaderVal(Header.Server).replace("/", "_").replace(":", "_").replace("?", "_");
+                    saveData(contentType, fileName, tag, response.getBody());
                 }
             } else {
                 System.out.println("Failed to receive a valid response.");
@@ -240,19 +242,17 @@ public class ClientDriver {
     /**
      * 将二进制数据存储到 Config.DATA_DIR 下
      */
-    private static void saveData(String type, byte[] data, String path) {
+    private static void saveData(String type, String fileName, String tag, byte[] data) {
         if (data == null || data.length == 0) {
             System.out.println("No binary data to save.");
             return;
         }
 
-        String[] pathParts = path.split("/");
-        String fileName = pathParts[pathParts.length - 1];
         if (!fileName.matches(".*\\.[a-zA-Z0-9]+$")) {
             fileName = fileName + "." + MIME.toExtension(type);
         }
-
-        File outFile = getFile(fileName);
+        tag = tag.endsWith("_") ? tag + "_" : tag;
+        File outFile = getFile(tag + fileName);
 
         try (FileOutputStream fos = new FileOutputStream(outFile)) {
             fos.write(data);
