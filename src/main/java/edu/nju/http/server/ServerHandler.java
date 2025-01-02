@@ -81,7 +81,7 @@ public class ServerHandler {
         try {
             filePath = Searcher.getResource(target);
         } catch (IllegalAccessException e) {
-            Log.error("Server", "Access denied: " + target, e);
+            Log.warn("Server", "Access denied: " + target);
             return ResponseBuilder.createErrorResponse(request.getVersion(), Status.FORBIDDEN);
         } catch (FileNotFoundException e) {
             Log.warn("Server", "Resource not found: " + target);

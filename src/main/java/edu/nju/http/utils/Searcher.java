@@ -36,12 +36,12 @@ public class Searcher {
                 Log.debug("Searcher", "Resource found: " + resourcePath);
                 return resourcePath;
             } else {
-                throw new IllegalAccessException("Unsafe path detected: " + resourcePath);
+                throw new IllegalAccessException();
             }
         }
 
         Log.warn("Searcher", "Resource not found: " + relativePath);
-        throw new FileNotFoundException("Resource not found: " + relativePath);
+        throw new FileNotFoundException();
     }
 
     /**
@@ -88,7 +88,7 @@ public class Searcher {
             URL resourceUrl = Searcher.class.getClassLoader().getResource(src);
             if (resourceUrl == null) {
                 Log.warn("ResourceExtractor", "Resource not found: " + src);
-                throw new IOException("Resource not found: " + src);
+                return;
             }
 
             String protocol = resourceUrl.getProtocol();

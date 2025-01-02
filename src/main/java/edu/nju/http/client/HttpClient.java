@@ -11,8 +11,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.time.ZonedDateTime;
@@ -38,47 +36,7 @@ public class HttpClient {
      * @return HTTP 响应对象
      */
     public HttpResponse send(String host, int port, HttpRequest request) {
-        // 检查缓存
-        if (Method.GET.equals(request.getMethod()) && cache.contains(request)) {
-            if (cache.isValid(request)) {
-                Log.info("HttpClient", "Cache hit: " + request.getStartLine());
-                HttpResponse cachedResponse = cache.get(request);
-                // 更新 Date
-                cachedResponse.setHeader(Header.Date, ZonedDateTime.now().format(DateTimeFormatter.RFC_1123_DATE_TIME));
-                return cachedResponse;
-            } else {
-                Log.info("HttpClient", "Cache expired: " + request.getStartLine());
-                HttpResponse cachedResponse = cache.get(request);
-                request.setHeader(Header.If_None_Match, cachedResponse.getHeaderVal(Header.ETag));
-                request.setHeader(Header.If_Modified_Since, cachedResponse.getHeaderVal(Header.Last_Modified));
-            }
-        }
-
-        HttpResponse response = sendRequest(host, port, request);
-
-        // 304 直接返回缓存内容
-        if (response != null && response.getStatusCode() == 304) {
-            Log.info("HttpClient", "Resource not modified, using cached version.");
-            cache.update(request);
-            return cache.get(request);
-        }
-
-        // 重定向
-        if (response != null && isRedirect(response)) {
-            return redirect(response, request);
-        }
-
-        // 缓存
-        if (Config.ENABLE_CACHE
-                && Method.GET.equals(request.getMethod())
-                && response != null
-                && response.getStatusCode() == 200
-                && response.getHeaderVal(Header.Cache_Control) != null
-                && !response.getHeaderVal(Header.Cache_Control).contains("no-store")) {
-            cache.put(request, response);
-        }
-
-        return response;
+        return send(host, port, request, 0);
     }
 
     /**
@@ -116,6 +74,102 @@ public class HttpClient {
         Log.info("HttpClient", "All connections have been closed. Client stopped.");
     }
 
+
+    /**
+     * HTTP 请求发送逻辑
+     *
+     * @param host          目标服务器地址
+     * @param port          目标服务器端口
+     * @param request       HTTP 请求对象
+     * @param redirectCount 重定向次数
+     * @return HTTP 响应对象
+     */
+    private HttpResponse send(String host, int port, HttpRequest request, int redirectCount) {
+        // 检查缓存
+        if (Method.GET.equals(request.getMethod()) && cache.contains(request)) {
+            if (cache.isValid(request)) {
+                Log.info("HttpClient", "Cache hit: " + request.getStartLine());
+                HttpResponse cachedResponse = cache.get(request);
+                // 更新 Date
+                cachedResponse.setHeader(Header.Date, ZonedDateTime.now().format(DateTimeFormatter.RFC_1123_DATE_TIME));
+                return cachedResponse;
+            } else {
+                Log.info("HttpClient", "Cache expired: " + request.getStartLine());
+                HttpResponse cachedResponse = cache.get(request);
+                request.setHeader(Header.If_None_Match, cachedResponse.getHeaderVal(Header.ETag));
+                request.setHeader(Header.If_Modified_Since, cachedResponse.getHeaderVal(Header.Last_Modified));
+            }
+        }
+
+        HttpResponse response = sendRequest(host, port, request);
+
+        // 304 直接返回缓存内容
+        if (response != null && response.getStatusCode() == 304) {
+            Log.info("HttpClient", "Resource not modified, using cached version.");
+            cache.update(request);
+            return cache.get(request);
+        }
+
+        // 重定向
+        if (response != null && isRedirect(response)) {
+            if(redirectCount >= Config.MAX_REDIRECTS) {
+                Log.warn("HttpClient", "Too many redirects.");
+                return null;
+            }
+            return redirect(response, request, redirectCount);
+        }
+
+        // 缓存
+        if (Config.ENABLE_CACHE
+                && Method.GET.equals(request.getMethod())
+                && response != null
+                && response.getStatusCode() == 200
+                && response.getHeaderVal(Header.Cache_Control) != null
+                && !response.getHeaderVal(Header.Cache_Control).contains("no-store")) {
+            cache.put(request, response);
+        }
+
+        return response;
+    }
+
+    /**
+     * 处理重定向逻辑
+     *
+     * @param response 原始响应
+     * @param request  原始请求
+     * @param redirectCount 重定向次数
+     * @return HTTP 响应对象
+     */
+    private HttpResponse redirect(HttpResponse response, HttpRequest request, int redirectCount) {
+
+        String location = response.getHeaderVal(Header.Location);
+        if (location == null) {
+            Log.warn("HttpClient", "Redirect location not specified.");
+            return null;
+        }
+
+        Log.info("HttpClient", "Redirecting to: " + location);
+
+        if (location.contains("://")) {
+            if(!location.startsWith("http")) {
+                Log.error("HttpClient", "Unsupported protocol: " + location);
+                return null;
+            }
+        }
+
+        request.setTarget(location);
+
+        String[] hostPort = request.getHeaderVal(Header.Host).split(":");
+        String host = hostPort[0];
+        int port = hostPort.length == 2 ? Integer.parseInt(hostPort[1]) : 80;
+
+        return send(host, port, request, redirectCount + 1);
+    }
+
+    private boolean isRedirect(HttpResponse response) {
+        int statusCode = response.getStatusCode();
+        return statusCode == 301 || statusCode == 302 || statusCode == 303;
+    }
 
     /**
      * 实际发送 HTTP 请求
@@ -222,44 +276,6 @@ public class HttpClient {
             disconnect(host, port);
             return null;
         }
-    }
-
-    /**
-     * 处理重定向逻辑
-     *
-     * @param response 原始响应
-     * @param request  原始请求
-     * @return HTTP 响应对象
-     */
-    private HttpResponse redirect(HttpResponse response, HttpRequest request) {
-
-        String location = response.getHeaderVal(Header.Location);
-        if (location == null) {
-            Log.warn("HttpClient", "Redirect location not specified.");
-            return null;
-        }
-
-        Log.info("HttpClient", "Redirecting to: " + location);
-
-        if (location.contains("://")) {
-            if(!location.startsWith("http")) {
-                Log.error("HttpClient", "Unsupported protocol: " + location);
-                return null;
-            }
-        }
-
-        request.setTarget(location);
-
-        String[] hostPort = request.getHeaderVal(Header.Host).split(":");
-        String host = hostPort[0];
-        int port = hostPort.length == 2 ? Integer.parseInt(hostPort[1]) : 80;
-
-        return send(host, port, request);
-    }
-
-    private boolean isRedirect(HttpResponse response) {
-        int statusCode = response.getStatusCode();
-        return statusCode == 301 || statusCode == 302 || statusCode == 303;
     }
 
     /**

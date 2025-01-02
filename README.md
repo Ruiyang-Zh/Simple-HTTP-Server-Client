@@ -1,3 +1,5 @@
+https://github.com/Ruiyang-Zh/Simple-HTTP-Server-Client.git
+
 ## **项目基本情况**
 
 基于 **Java Socket API** 实现的简单 HTTP 客户端与服务器端应用
@@ -161,7 +163,8 @@ help
     "log_level": 1,
     "log_dir": "logs",
     "data_dir": "data",
-    "max_display_size": 1024
+    "max_display_size": 1024,
+    "max_redirects": 5
   },
   "server": {
     "server_name": "SimpleHttpServer",
@@ -224,6 +227,7 @@ help
 | `log_dir`            | String   | 日志存储目录（目前没有实现日志存储）  | logs             |
 | `data_dir`           | String   | 数据存储目录                          | data             |
 | `max_display_size`   | Integer  | 命令行界面消息体展示限制              | 1024             |
+| `max_redirects`      | Integer  | 最大重定向次数                        | 5                |
 
 
 

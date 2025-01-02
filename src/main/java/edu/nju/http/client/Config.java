@@ -38,6 +38,7 @@ public class Config {
 
     // ================== 其他设置 ==================
     public static final int MAX_DISPLAY_SIZE;
+    public static final int MAX_REDIRECTS;
 
     static {
         JSONObject configJson = null;
@@ -80,5 +81,7 @@ public class Config {
         DATA_DIR = clientConfig.optString("data_dir", "data");
 
         MAX_DISPLAY_SIZE = clientConfig.optInt("max_display_size", 1024);
+
+        MAX_REDIRECTS = clientConfig.optInt("max_redirects", 5);
     }
 }

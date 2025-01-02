@@ -245,7 +245,8 @@ public class ClientDriver {
             System.out.println("No binary data to save.");
             return;
         }
-        String fileName = path.replaceAll("^/", "");
+        String[] pathParts = path.split("/");
+        String fileName = pathParts[pathParts.length - 1];
         if(!fileName.matches(".*\\.[a-zA-Z0-9]+$")){
             fileName = fileName + "." + MIME.toExtension(type);
         }
